@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>AI 恋人</title>
-  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22AI%20%E6%81%8B%E4%BA%BA%22%2C%22short_name%22%3A%22AI%E6%81%8B%E4%BA%BA%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F5F1EA%22%2C%22theme_color%22%3A%22%23F5F1EA%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Ctext%20y%3D'.9em'%20font-size%3D'90'%3E%F0%9F%92%9E%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22100x100%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+  <link rel="manifest" href="/Palino-s-home/manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <style>
@@ -34,8 +34,15 @@
       background-position: center; flex-shrink: 0;
     }
     .bubble {
-      max-width: 75%; padding: 10px 14px; background: rgba(215, 201, 184, 0.9);
-      border-radius: 12px; position: relative; word-break: break-word; font-size: 15px; line-height: 1.4;
+      max-width: 18em;
+      min-width: 2em;
+      padding: 10px 14px;
+      background: rgba(215, 201, 184, 0.9);
+      border-radius: 12px;
+      position: relative;
+      word-break: break-word;
+      font-size: 15px;
+      line-height: 1.4;
       box-shadow: 0 2px 2px rgba(184, 169, 154, 0.4);
     }
     .message-row.me .bubble { border-bottom-right-radius: 4px; }
@@ -93,7 +100,7 @@
 </head>
 <body>
   <div class="header">
-    <h1>💞 我的 AI 恋人</h1>
+    <h1 id="headerTitle">💞 小爱</h1>
     <button class="settings-btn" onclick="openSettings()">⚙️</button>
   </div>
 
@@ -167,11 +174,11 @@
     </div>
   </div>
 
-  <!-- 数据管理（导出/导入） -->
+  <!-- 数据管理 -->
   <div class="sub-page" id="dataManagePage">
     <div class="sub-header"><button onclick="closeSubPage('dataManagePage')">← 返回</button><h3>数据管理</h3></div>
     <div class="sub-content">
-      <p>将你的聊天记录和所有设置备份为文件，或从备份文件恢复。</p>
+      <p>备份聊天记录和设置，或从备份恢复。</p>
       <button onclick="exportData()">📤 导出数据</button>
       <br><br>
       <label>📥 导入数据（选择之前导出的 .json 文件）</label>
@@ -181,7 +188,6 @@
   </div>
 
   <script>
-    // ========== 数据库相关 ==========
     const DB_NAME = 'AiLoverDB';
     let db;
     let messages = [];
@@ -227,6 +233,7 @@
         const result = await new Promise(resolve => { req.onsuccess = () => resolve(req.result); });
         if (result !== undefined) settings[k] = result.value;
       }
+      updateHeaderTitle();   // ← 新增
     }
 
     async function saveSetting(key, value) {
@@ -235,12 +242,19 @@
       await store.put({ key, value });
     }
 
+    function updateHeaderTitle() {
+      const titleEl = document.getElementById('headerTitle');
+      if (titleEl) {
+        const name = settings.roleName || '小爱';
+        titleEl.textContent = '💞 ' + name;
+      }
+    }
+
     function getTimeString() {
       const now = new Date();
       return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     }
 
-    // ========== 聊天渲染 ==========
     function renderChat() {
       const container = document.getElementById('chatContainer');
       container.innerHTML = '';
@@ -289,7 +303,6 @@
       container.scrollTop = container.scrollHeight;
     }
 
-    // ========== 消息操作 ==========
     async function sendUserMessage() {
       const input = document.getElementById('msgInput');
       const text = input.value.trim();
@@ -351,7 +364,7 @@
       return data.choices[0].message.content;
     }
 
-    // ========== 设置页交互 ==========
+    // 设置页交互
     function openSettings() { document.getElementById('settingsOverlay').classList.add('active'); }
     function closeSettings() { document.getElementById('settingsOverlay').classList.remove('active'); }
     function openSubPage(id) { document.getElementById(id).classList.add('active'); }
@@ -368,6 +381,7 @@
       settings.roleInfo = document.getElementById('roleInfo').value;
       await saveSetting('roleName', settings.roleName);
       await saveSetting('roleInfo', settings.roleInfo);
+      updateHeaderTitle();   // ← 新增
       closeSubPage('roleInfoPage');
     }
     function updateRoleAvatarPreview() {
@@ -482,27 +496,20 @@
       alert('情侣头像已更新！');
     }
 
-    // ========== 数据导出/导入 ==========
     function openDataManage() {
-      document.getElementById('importFile').value = ''; // 清空上次选择
+      document.getElementById('importFile').value = '';
       document.getElementById('importStatus').textContent = '';
       openSubPage('dataManagePage');
     }
 
     async function exportData() {
-      // 获取当前完整数据
-      const allMessages = await getAllMessages();
+      const tx = db.transaction('messages', 'readonly');
+      const store = tx.objectStore('messages');
+      const allMessages = await new Promise(resolve => { const req = store.getAll(); req.onsuccess = () => resolve(req.result); });
       const allSettings = {};
       const keys = ['roleName','roleInfo','roleAvatar','apiUrl','apiKey','model','contextRounds','coupleAvatars'];
-      for (let k of keys) {
-        allSettings[k] = settings[k];
-      }
-      const exportObj = {
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        messages: allMessages,
-        settings: allSettings
-      };
+      for (let k of keys) allSettings[k] = settings[k];
+      const exportObj = { version: 1, exportedAt: new Date().toISOString(), messages: allMessages, settings: allSettings };
       const jsonStr = JSON.stringify(exportObj, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -513,16 +520,7 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      alert('数据已导出，文件已开始下载。');
-    }
-
-    async function getAllMessages() {
-      const tx = db.transaction('messages', 'readonly');
-      const store = tx.objectStore('messages');
-      return new Promise(resolve => {
-        const req = store.getAll();
-        req.onsuccess = () => resolve(req.result);
-      });
+      alert('导出成功！');
     }
 
     async function importData() {
@@ -534,32 +532,26 @@
         const text = await file.text();
         const data = JSON.parse(text);
         if (!data.messages || !data.settings) throw new Error('无效的备份文件格式');
-        // 确认覆盖
         if (!confirm('导入将覆盖当前所有聊天记录和设置，确定继续吗？')) return;
-        // 清空数据库
-        await clearDatabase();
-        // 写入设置
-        for (const [key, value] of Object.entries(data.settings)) {
-          await saveSetting(key, value);
-        }
-        // 写入消息（注意ID可能会重新生成，保持原有id属性）
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(['messages', 'settings'], 'readwrite');
+          tx.objectStore('messages').clear();
+          tx.objectStore('settings').clear();
+          tx.oncomplete = () => resolve();
+          tx.onerror = (e) => reject(e);
+        });
+        for (const [key, value] of Object.entries(data.settings)) await saveSetting(key, value);
         const tx = db.transaction('messages', 'readwrite');
         const store = tx.objectStore('messages');
         for (const msg of data.messages) {
-          // 保留原始id（如果存在），否则自动生成
-          if (msg.id) {
-            await store.put(msg);
-          } else {
-            await store.add(msg);
-          }
+          if (msg.id) await store.put(msg);
+          else await store.add(msg);
         }
         await tx.done;
-        // 重新加载到内存
         await loadSettings();
         await loadMessages();
-        statusDiv.textContent = '✅ 导入成功！聊天记录和设置已恢复。';
+        statusDiv.textContent = '✅ 导入成功！';
         statusDiv.style.color = 'green';
-        // 清空文件选择
         fileInput.value = '';
       } catch (e) {
         statusDiv.textContent = '❌ 导入失败：' + e.message;
@@ -567,49 +559,19 @@
       }
     }
 
-    async function clearDatabase() {
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(['messages', 'settings'], 'readwrite');
-        const msgStore = tx.objectStore('messages');
-        const setStore = tx.objectStore('settings');
-        msgStore.clear();
-        setStore.clear();
-        tx.oncomplete = () => resolve();
-        tx.onerror = (e) => reject(e);
-      });
-    }
-
-    // ========== Service Worker 自动更新 ==========
+    // Service Worker 注册
     if ('serviceWorker' in navigator) {
-      const swCode = `
-        self.addEventListener('install', event => { self.skipWaiting(); });
-        self.addEventListener('activate', event => { event.waitUntil(clients.claim()); });
-        self.addEventListener('fetch', event => {
-          event.respondWith(
-            caches.match(event.request).then(cached => {
-              return fetch(event.request).then(response => {
-                if (response && response.status === 200) {
-                  const clone = response.clone();
-                  caches.open('v1').then(cache => cache.put(event.request, clone));
-                }
-                return response;
-              }).catch(() => cached);
-            })
-          );
-        });
-      `;
-      const blob = new Blob([swCode], { type: 'application/javascript' });
-      const swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl).then(reg => {
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              if (confirm('发现新版本，点击确定刷新页面')) window.location.reload();
-            }
+      navigator.serviceWorker.register('/Palino-s-home/sw.js')
+        .then(reg => {
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                if (confirm('发现新版本，点击确定刷新页面')) window.location.reload();
+              }
+            });
           });
-        });
-      });
+        }).catch(err => console.log('SW 注册失败', err));
     }
 
     // 启动
