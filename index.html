@@ -565,14 +565,29 @@
       saveSetting('totalMessageCount', settings.totalMessageCount);
     }
 
-    // ========== 聊天渲染（包含时间标签、心里话折叠） ==========
+    // ========== 聊天渲染（心里话持久化、时间标签、引用） ==========
     function renderChat() {
       const container = document.getElementById('chatContainer');
       container.innerHTML = '';
-      let thinkContent = null;
       let prevTimestamp = null;
 
       messages.forEach((msg, index) => {
+        // 心里话特殊渲染
+        if (msg.type === 'think') {
+          const thinkDiv = document.createElement('div');
+          thinkDiv.className = 'think-header';
+          thinkDiv.textContent = '💭 Palino的心里话';
+          const thinkBody = document.createElement('div');
+          thinkBody.className = 'think-content';
+          thinkBody.textContent = msg.content;
+          thinkDiv.onclick = () => thinkBody.classList.toggle('open');
+          container.appendChild(thinkDiv);
+          container.appendChild(thinkBody);
+          prevTimestamp = msg.timestamp;
+          return;
+        }
+
+        // 时间间隔标签
         if (prevTimestamp) {
           const prevTime = new Date(`2000-01-01 ${prevTimestamp}`);
           const currTime = new Date(`2000-01-01 ${msg.timestamp}`);
@@ -586,14 +601,7 @@
         }
         prevTimestamp = msg.timestamp;
 
-        if (msg.role === 'ai' && msg.content.includes('<think>')) {
-          const match = msg.content.match(/<think>([\s\S]*?)<\/think>/);
-          if (match) {
-            thinkContent = match[1].trim();
-            msg.content = msg.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-          }
-        }
-
+        // 解析 AI 引用
         let displayContent = msg.content;
         let quoted = msg.quoted;
         if (msg.role === 'ai' && !quoted && displayContent) {
@@ -625,19 +633,6 @@
           avatar.style.background = msg.role === 'user' ? '#a0c4ff' : '#ffc6ff';
           avatar.style.display = 'flex'; avatar.style.alignItems = 'center'; avatar.style.justifyContent = 'center';
           avatar.style.fontSize = '20px'; avatar.textContent = msg.role === 'user' ? '👤' : '🤖';
-        }
-
-        if (msg.role === 'ai' && thinkContent !== null) {
-          const thinkDiv = document.createElement('div');
-          thinkDiv.className = 'think-header';
-          thinkDiv.textContent = '💭 Palino的心里话';
-          const thinkBody = document.createElement('div');
-          thinkBody.className = 'think-content';
-          thinkBody.textContent = thinkContent;
-          thinkDiv.onclick = () => thinkBody.classList.toggle('open');
-          container.appendChild(thinkDiv);
-          container.appendChild(thinkBody);
-          thinkContent = null;
         }
 
         let bubbleElement;
@@ -696,6 +691,7 @@
       });
       container.scrollTop = container.scrollHeight;
     }
+
     // ========== 多选功能 ==========
     function toggleSelectMessage(index) {
       if (selectedMessageIndices.has(index)) selectedMessageIndices.delete(index);
@@ -797,7 +793,7 @@
 
     function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-    // ========== AI 回复（分段延迟） ==========
+    // ========== AI 回复（心里话持久化 + 分段延迟） ==========
     async function triggerAIReply() {
       if (selectMode) return;
       if (messages.length === 0) return;
@@ -817,6 +813,18 @@
       try {
         const reply = await callAI();
         hint.remove();
+
+        // 提取心里话并保存为独立消息
+        let thinkText = '';
+        const thinkMatch = reply.match(/<think>([\s\S]*?)<\/think>/);
+        if (thinkMatch) {
+          thinkText = thinkMatch[1].trim();
+          const thinkMsg = { role: 'ai', type: 'think', content: thinkText, timestamp: getTimeString() };
+          messages.push(thinkMsg);
+          await saveMessage(thinkMsg);
+          reply = reply.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+        }
+
         const segments = reply.split(/\n?---\n?/).filter(s => s.trim() !== '');
         if (segments.length > 0) {
           const firstMsg = { role: 'ai', type: 'text', content: segments[0].trim(), timestamp: getTimeString() };
@@ -865,6 +873,7 @@
       const recent = messages.slice(-(settings.contextRounds*2));
       const msgs = [ { role: 'system', content: system } ];
       recent.forEach(m => {
+        if (m.type === 'think') return; // 跳过心里话
         let c = m.content;
         if (m.type==='image') c = '[用户发送了一张图片]';
         else if (m.type==='file') c = `[用户发送了文件: ${m.fileName}]\n内容: ${m.content}`;
