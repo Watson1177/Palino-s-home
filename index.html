@@ -763,22 +763,25 @@
     }
 
     function renderMemoryList(category, container) {
-      if (!container) return;
-      container.innerHTML = '';
-      const list = settings.memories[category] || [];
-      list.forEach((item, index) => {
-        const div = document.createElement('div');
-        div.className = 'memory-item';
-        div.innerHTML = `
-          <span class="memory-time">${item.time}</span>
-          <span class="memory-text">${item.event} ${item.feeling ? '· ' + item.feeling : ''}</span>
-          <div class="memory-actions">
-            <button onclick="showEditMemoryForm('${category}', ${index})">✏️</button>
-            <button onclick="deleteMemory('${category}', ${index})">🗑️</button>
-          </div>`;
-        container.appendChild(div);
-      });
-    }
+  if (!container) return;
+  container.innerHTML = '';
+  const list = settings.memories[category] || [];
+  list.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = 'memory-item';
+    div.style.flexDirection = 'column';
+    div.style.alignItems = 'flex-start';
+    div.innerHTML = `
+      <div style="font-size:11px; color:#999; margin-bottom:2px;">${item.time}</div>
+      <div style="font-size:14px; margin-bottom:2px;">${item.event || '(无内容)'}</div>
+      <div style="font-size:13px; color:#8a7b6e;">${item.feeling ? '💭 ' + item.feeling : ''}</div>
+      <div class="memory-actions" style="align-self: flex-end; margin-top: 4px;">
+        <button onclick="showEditMemoryForm('${category}', ${index})">✏️</button>
+        <button onclick="deleteMemory('${category}', ${index})">🗑️</button>
+      </div>`;
+    container.appendChild(div);
+  });
+}
 
     // ========== 情侣头像管理 ==========
     function openCoupleAvatarsPage() {
