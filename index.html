@@ -165,7 +165,6 @@
     }
     .think-content.open { display: block; }
 
-    /* 时间标签 */
     .time-divider {
       text-align: center;
       font-size: 12px;
@@ -566,20 +565,19 @@
       saveSetting('totalMessageCount', settings.totalMessageCount);
     }
 
-    // ========== 聊天渲染（包含时间标签） ==========
+    // ========== 聊天渲染（包含时间标签、心里话折叠） ==========
     function renderChat() {
       const container = document.getElementById('chatContainer');
       container.innerHTML = '';
       let thinkContent = null;
-      let prevTimestamp = null; // 用于比较上一条消息的时间
+      let prevTimestamp = null;
 
       messages.forEach((msg, index) => {
-        // 检查时间间隔
         if (prevTimestamp) {
           const prevTime = new Date(`2000-01-01 ${prevTimestamp}`);
           const currTime = new Date(`2000-01-01 ${msg.timestamp}`);
           const diffMs = currTime - prevTime;
-          if (diffMs >= 3 * 60 * 1000) { // 超过3分钟
+          if (diffMs >= 3 * 60 * 1000) {
             const timeDiv = document.createElement('div');
             timeDiv.className = 'time-divider';
             timeDiv.textContent = msg.timestamp;
@@ -588,7 +586,6 @@
         }
         prevTimestamp = msg.timestamp;
 
-        // 原有思维链解析
         if (msg.role === 'ai' && msg.content.includes('<think>')) {
           const match = msg.content.match(/<think>([\s\S]*?)<\/think>/);
           if (match) {
@@ -597,7 +594,6 @@
           }
         }
 
-        // 引用解析
         let displayContent = msg.content;
         let quoted = msg.quoted;
         if (msg.role === 'ai' && !quoted && displayContent) {
@@ -679,7 +675,6 @@
         if (msg.role === 'user') { row.appendChild(wrapper); row.appendChild(avatar); }
         else { row.appendChild(avatar); row.appendChild(wrapper); }
 
-        // 事件绑定
         row.addEventListener('click', (e) => {
           if (selectMode) { e.preventDefault(); toggleSelectMessage(index); }
         });
@@ -743,7 +738,7 @@
       renderChat();
     }
 
-    // ========== 引用（支持取消） ==========
+    // ========== 引用（双击取消） ==========
     function setQuoteFromMessage(index) {
       const msg = messages[index];
       if (!msg) return;
@@ -1418,7 +1413,6 @@
       await loadSettings();
       await loadMessages();
 
-      // 清理旧版残留“正在输入…”
       const cleanTx = db.transaction('messages', 'readwrite');
       const cleanStore = cleanTx.objectStore('messages');
       const allMsgs = await new Promise(r => { const req = cleanStore.getAll(); req.onsuccess = () => r(req.result); });
@@ -1437,7 +1431,6 @@
         this.style.height = Math.min(this.scrollHeight, 120) + 'px';
       });
 
-      // 启动归档定时器
       startArchiveTimer();
     })();
   </script>
