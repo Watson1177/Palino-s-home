@@ -811,7 +811,7 @@
       hint.className = 'typing-hint'; hint.id = 'typingHint'; hint.textContent = 'AI 正在输入…';
       inputArea.parentNode.insertBefore(hint, inputArea);
       try {
-        const reply = await callAI();
+        let reply = await callAI();
         hint.remove();
 
         // 提取心里话并保存为独立消息
