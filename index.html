@@ -117,35 +117,16 @@
     .memory-actions button { background:none; border:none; cursor:pointer; font-size:16px; }
 
     .memory-edit-card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 16px;
-      margin-top: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      display: none;
+      background: #fff; border-radius: 12px; padding: 16px; margin-top: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: none;
     }
     .memory-edit-card.active { display: block; }
     .memory-edit-card label { font-size: 14px; color: #555; margin-bottom: 4px; display: block; }
     .memory-edit-card input, .memory-edit-card textarea {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 12px;
-      border: 1px solid #d4c9bb;
-      border-radius: 8px;
-      font-size: 14px;
+      width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #d4c9bb; border-radius: 8px; font-size: 14px;
     }
-    .memory-edit-card .edit-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-    .memory-edit-card .edit-actions button {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      cursor: pointer;
-    }
+    .memory-edit-card .edit-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .memory-edit-card .edit-actions button { padding: 8px 16px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
     .memory-edit-card .save-btn { background: #b8a99a; color: white; }
     .memory-edit-card .cancel-btn { background: #e0d6cb; color: #333; }
 
@@ -163,81 +144,50 @@
       font-size:12px; color:#8a7b6e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
     }
 
-    /* 纪念日/统计 */
-    .anniv-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 20px;
+    .message-row.selectable { cursor: pointer; }
+    .message-row.selected .bubble, .message-row.selected .image-bubble, .message-row.selected .file-bubble {
+      outline: 3px solid #c69c6d; outline-offset: 2px;
     }
+    .select-toolbar {
+      display: none;
+      position: absolute; bottom: 60px; left: 0; right: 0;
+      background: #fff; border-top: 1px solid #e0d6cb; padding: 8px 16px; text-align: center; z-index: 5;
+    }
+    .select-toolbar.active { display: block; }
+    .select-toolbar button { margin: 0 8px; padding: 6px 16px; background: #b8a99a; color: white; border: none; border-radius: 8px; }
+
+    .think-header {
+      font-size: 13px; color: #b8a99a; cursor: pointer; margin: 4px 0; user-select: none;
+    }
+    .think-content {
+      font-size: 13px; color: #8a7b6e; background: rgba(215,201,184,0.3); border-radius: 8px; padding: 8px 12px;
+      margin-top: 4px; display: none; white-space: pre-wrap;
+    }
+    .think-content.open { display: block; }
+
+    .anniv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
     .anniv-card {
-      border-radius: 12px;
-      padding: 12px;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      aspect-ratio: 1 / 1;
-      position: relative;
-      cursor: pointer;
-      transition: transform 0.1s;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      background: #b8a99a;
+      border-radius: 12px; padding: 12px; color: white; display: flex; flex-direction: column; justify-content: space-between;
+      aspect-ratio: 1 / 1; position: relative; cursor: pointer; transition: transform 0.1s; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background: #b8a99a;
     }
     .anniv-card:active { transform: scale(0.97); }
     .anniv-card .title { font-size: 14px; font-weight: bold; }
     .anniv-card .days { font-size: 28px; font-weight: bold; margin: 4px 0; }
     .anniv-card .subtitle { font-size: 12px; opacity: 0.9; }
 
-    .heatmap-container {
-      background: #fff;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-    .heatmap-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
+    .heatmap-container { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    .heatmap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .heatmap-month { font-size: 16px; font-weight: bold; color: #333; }
     .heatmap-nav { display: flex; gap: 8px; }
-    .heatmap-nav button {
-      background: #f0ece6;
-      border: none;
-      border-radius: 6px;
-      padding: 4px 10px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .heatmap-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-      text-align: center;
-    }
+    .heatmap-nav button { background: #f0ece6; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 14px; }
+    .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
     .heatmap-cell {
-      aspect-ratio: 1;
-      border-radius: 4px;
-      font-size: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #666;
-      background: #f5f1ea;
+      aspect-ratio: 1; border-radius: 4px; font-size: 10px; display: flex; align-items: center; justify-content: center;
+      color: #666; background: #f5f1ea;
     }
     .heatmap-cell.empty { background: #faf8f5; color: #ccc; }
 
-    .stats-box {
-      background: #fff;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    .stats-box h3 { margin-bottom: 8px; color: #555; }
-    .stats-box .amount { font-size: 24px; color: #b8a99a; font-weight: bold; }
+    .typing-hint { text-align: center; color: #999; font-size: 13px; padding: 4px; }
   </style>
 </head>
 <body>
@@ -247,9 +197,12 @@
   </div>
 
   <div class="main-content">
-    <!-- 聊天页面 -->
     <div class="page active" id="chatPage">
       <div class="chat-container" id="chatContainer"></div>
+      <div class="select-toolbar" id="selectToolbar">
+        <button onclick="deleteSelectedMessages()">🗑️ 删除选中</button>
+        <button onclick="cancelSelectMode()">取消</button>
+      </div>
       <div class="input-area">
         <button class="attach-btn" onclick="attachFile()">📎</button>
         <textarea id="msgInput" placeholder="说点什么..." rows="1" autofocus></textarea>
@@ -258,7 +211,6 @@
       </div>
     </div>
 
-    <!-- 记忆页面 -->
     <div class="page" id="memoryPage">
       <div class="sub-content">
         <div class="memory-section">
@@ -315,7 +267,6 @@
       </div>
     </div>
 
-    <!-- 纪念日/统计页面 -->
     <div class="page" id="journalPage">
       <div class="sub-content">
         <h3 style="margin-bottom:12px;">💕 纪念日</h3>
@@ -348,7 +299,7 @@
         <h3 style="margin-top:20px; margin-bottom:12px;">🔥 聊天热力图</h3>
         <div class="heatmap-container">
           <div class="heatmap-header">
-            <span class="heatmap-month" id="heatmapMonthLabel">2024年6月</span>
+            <span class="heatmap-month" id="heatmapMonthLabel"></span>
             <div class="heatmap-nav">
               <button onclick="changeHeatmapMonth(-1)">◀</button>
               <button onclick="changeHeatmapMonth(1)">▶</button>
@@ -361,7 +312,6 @@
     </div>
   </div>
 
-  <!-- 底部导航栏 -->
   <div class="bottom-nav">
     <span class="nav-item" onclick="switchPage('placeholder1')">🔲</span>
     <span class="nav-item" onclick="switchPage('journal')">📝</span>
@@ -370,7 +320,6 @@
     <span class="nav-item" onclick="switchPage('placeholder3')">🔲</span>
   </div>
 
-  <!-- 设置页覆盖层 -->
   <div class="settings-overlay" id="settingsOverlay">
     <div class="settings-header">
       <button onclick="closeSettings()">← 返回</button>
@@ -386,7 +335,6 @@
     </div>
   </div>
 
-  <!-- 角色信息 -->
   <div class="sub-page" id="roleInfoPage">
     <div class="sub-header"><button onclick="closeSubPage('roleInfoPage')">← 返回</button><h3>角色信息</h3></div>
     <div class="sub-content">
@@ -402,7 +350,6 @@
     </div>
   </div>
 
-  <!-- 情侣头像管理 -->
   <div class="sub-page" id="coupleAvatarsPage">
     <div class="sub-header"><button onclick="closeSubPage('coupleAvatarsPage')">← 返回</button><h3>情侣头像</h3></div>
     <div class="sub-content">
@@ -437,7 +384,6 @@
     </div>
   </div>
 
-  <!-- API 配置（含单价） -->
   <div class="sub-page" id="apiConfigPage">
     <div class="sub-header"><button onclick="closeSubPage('apiConfigPage')">← 返回</button><h3>API 配置</h3></div>
     <div class="sub-content">
@@ -451,7 +397,6 @@
     </div>
   </div>
 
-  <!-- 聊天记录查找 -->
   <div class="sub-page" id="searchPage">
     <div class="sub-header"><button onclick="closeSubPage('searchPage')">← 返回</button><h3>查找聊天记录</h3></div>
     <div class="sub-content">
@@ -460,7 +405,6 @@
     </div>
   </div>
 
-  <!-- 对话设置 -->
   <div class="sub-page" id="dialogSettingsPage">
     <div class="sub-header"><button onclick="closeSubPage('dialogSettingsPage')">← 返回</button><h3>对话设置</h3></div>
     <div class="sub-content">
@@ -470,7 +414,6 @@
     </div>
   </div>
 
-  <!-- 数据管理 -->
   <div class="sub-page" id="dataManagePage">
     <div class="sub-header"><button onclick="closeSubPage('dataManagePage')">← 返回</button><h3>数据管理</h3></div>
     <div class="sub-content">
@@ -483,15 +426,14 @@
     </div>
   </div>
 
-  <!-- 气泡长按菜单 -->
   <div class="bubble-menu" id="bubbleMenu">
     <button onclick="quoteMessage()">💬 引用</button>
     <button onclick="deleteSingleMessage()">🗑️ 删除本条</button>
     <button onclick="deleteMessagesBelow()">🗑️ 删除此条及以下</button>
+    <button onclick="enterSelectModeFromMenu()">✅ 多选删除</button>
   </div>
 
   <script>
-    // ========== 全局变量 ==========
     const DB_NAME = 'AiLoverDB';
     let db;
     let messages = [];
@@ -508,7 +450,8 @@
       anniversaries: [],
       dailyMessageCounts: {},
       totalMessageCount: 0,
-      apiPrice: 0
+      apiPrice: 0,
+      lastArchiveDate: ''
     };
 
     let currentMenuMsgIndex = null;
@@ -516,6 +459,8 @@
     let currentEditIndex = { core: -1, important: -1, daily: -1 };
     let currentAnnivIndex = -1;
     let heatmapYearMonth = new Date();
+    let selectMode = false;
+    let selectedMessageIndices = new Set();
 
     function openDB() {
       return new Promise((resolve, reject) => {
@@ -547,7 +492,7 @@
     async function loadSettings() {
       const tx = db.transaction('settings', 'readonly');
       const store = tx.objectStore('settings');
-      const keys = ['roleName','roleInfo','roleAvatar','apiUrl','apiKey','model','contextRounds','coupleAvatars','memories','anniversaries','dailyMessageCounts','totalMessageCount','apiPrice'];
+      const keys = ['roleName','roleInfo','roleAvatar','apiUrl','apiKey','model','contextRounds','coupleAvatars','memories','anniversaries','dailyMessageCounts','totalMessageCount','apiPrice','lastArchiveDate'];
       for (let k of keys) {
         const req = store.get(k);
         const result = await new Promise(resolve => { req.onsuccess = () => resolve(req.result); });
@@ -558,6 +503,7 @@
       if (!settings.dailyMessageCounts) settings.dailyMessageCounts = {};
       if (settings.totalMessageCount === undefined) settings.totalMessageCount = 0;
       if (settings.apiPrice === undefined) settings.apiPrice = 0;
+      if (!settings.lastArchiveDate) settings.lastArchiveDate = '';
       updateHeaderTitle();
     }
 
@@ -594,6 +540,11 @@
         document.getElementById('memoryPage').classList.add('active');
         document.querySelector('.nav-item:nth-child(4)').classList.add('active');
         renderAllMemories();
+      } else if (target === 'journal') {
+        document.getElementById('journalPage').classList.add('active');
+        document.querySelector('.nav-item:nth-child(2)').classList.add('active');
+        renderAnniversaries();
+        renderHeatmap();
       }
     }
 
@@ -606,30 +557,46 @@
       saveSetting('totalMessageCount', settings.totalMessageCount);
     }
 
-    // ========== 聊天渲染 ==========
     function renderChat() {
       const container = document.getElementById('chatContainer');
       container.innerHTML = '';
+      let thinkContent = null;
       messages.forEach((msg, index) => {
+        if (msg.role === 'ai' && msg.content.includes('<think>')) {
+          const match = msg.content.match(/<think>([\s\S]*?)<\/think>/);
+          if (match) {
+            thinkContent = match[1].trim();
+            msg.content = msg.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+          }
+        }
+
         const row = document.createElement('div');
         row.className = `message-row ${msg.role === 'user' ? 'me' : 'ai'}`;
+        if (selectMode) row.classList.add('selectable');
+        if (selectedMessageIndices.has(index)) row.classList.add('selected');
+        row.dataset.msgIndex = index;
+
         const avatar = document.createElement('div');
         avatar.className = 'avatar';
-        const avatarSrc = msg.role === 'user'
-          ? (settings.coupleAvatars.length > 0 ? settings.coupleAvatars[0]?.my : '')
-          : (settings.roleAvatar || '');
+        const avatarSrc = msg.role === 'user' ? (settings.coupleAvatars.length > 0 ? settings.coupleAvatars[0]?.my : '') : (settings.roleAvatar || '');
         if (avatarSrc) avatar.style.backgroundImage = `url(${avatarSrc})`;
         else {
           avatar.style.background = msg.role === 'user' ? '#a0c4ff' : '#ffc6ff';
           avatar.style.display = 'flex'; avatar.style.alignItems = 'center'; avatar.style.justifyContent = 'center';
           avatar.style.fontSize = '20px'; avatar.textContent = msg.role === 'user' ? '👤' : '🤖';
         }
-        if (msg.role === 'user') {
-          avatar.addEventListener('contextmenu', e => { e.preventDefault(); selectCoupleAvatar(); });
-          avatar.addEventListener('touchstart', function(e) {
-            this.holdTimer = setTimeout(() => selectCoupleAvatar(), 600);
-          });
-          avatar.addEventListener('touchend', function(e) { clearTimeout(this.holdTimer); });
+
+        if (msg.role === 'ai' && thinkContent !== null) {
+          const thinkDiv = document.createElement('div');
+          thinkDiv.className = 'think-header';
+          thinkDiv.textContent = '💭 Palino的心里话';
+          const thinkBody = document.createElement('div');
+          thinkBody.className = 'think-content';
+          thinkBody.textContent = thinkContent;
+          thinkDiv.onclick = () => thinkBody.classList.toggle('open');
+          container.appendChild(thinkDiv);
+          container.appendChild(thinkBody);
+          thinkContent = null;
         }
 
         let bubbleElement;
@@ -651,7 +618,6 @@
 
         const wrapper = document.createElement('div');
         wrapper.style.display = 'flex'; wrapper.style.flexDirection = 'column'; wrapper.style.maxWidth = '75%';
-        wrapper.dataset.msgIndex = index;
         wrapper.appendChild(bubbleElement);
 
         if (msg.quoted) {
@@ -668,29 +634,91 @@
         if (msg.role === 'user') { row.appendChild(wrapper); row.appendChild(avatar); }
         else { row.appendChild(avatar); row.appendChild(wrapper); }
 
-        wrapper.addEventListener('contextmenu', e => { e.preventDefault(); showBubbleMenu(index, e.pageX, e.pageY); });
-        wrapper.addEventListener('touchstart', function(e) {
-          this.holdTimer = setTimeout(() => { showBubbleMenu(index, e.touches[0].pageX, e.touches[0].pageY); }, 600);
+        row.addEventListener('click', (e) => {
+          if (selectMode) {
+            e.preventDefault();
+            toggleSelectMessage(index);
+          }
         });
-        wrapper.addEventListener('touchend', function(e) { clearTimeout(this.holdTimer); });
-        wrapper.addEventListener('touchmove', function(e) { clearTimeout(this.holdTimer); });
+        row.addEventListener('dblclick', (e) => {
+          if (!selectMode) {
+            e.preventDefault();
+            setQuoteFromMessage(index);
+          }
+        });
+        row.addEventListener('contextmenu', e => {
+          e.preventDefault();
+          if (!selectMode) showBubbleMenu(index, e.pageX, e.pageY);
+        });
+        row.addEventListener('touchstart', function(e) {
+          if (selectMode) return;
+          this.holdTimer = setTimeout(() => showBubbleMenu(index, e.touches[0].pageX, e.touches[0].pageY), 600);
+        });
+        row.addEventListener('touchend', function(e) { clearTimeout(this.holdTimer); });
+        row.addEventListener('touchmove', function(e) { clearTimeout(this.holdTimer); });
 
         container.appendChild(row);
       });
       container.scrollTop = container.scrollHeight;
     }
 
-    // ========== 发送消息 & AI ==========
+    // 多选功能
+    function toggleSelectMessage(index) {
+      if (selectedMessageIndices.has(index)) selectedMessageIndices.delete(index);
+      else selectedMessageIndices.add(index);
+      renderChat();
+      updateSelectToolbar();
+    }
+    function updateSelectToolbar() {
+      const toolbar = document.getElementById('selectToolbar');
+      if (selectMode && selectedMessageIndices.size > 0) toolbar.classList.add('active');
+      else toolbar.classList.remove('active');
+    }
+    function enterSelectMode() {
+      selectMode = true;
+      selectedMessageIndices.clear();
+      renderChat();
+      document.getElementById('selectToolbar').classList.remove('active');
+      hideBubbleMenu();
+    }
+    function enterSelectModeFromMenu() { hideBubbleMenu(); enterSelectMode(); }
+    function cancelSelectMode() {
+      selectMode = false;
+      selectedMessageIndices.clear();
+      renderChat();
+      document.getElementById('selectToolbar').classList.remove('active');
+    }
+    async function deleteSelectedMessages() {
+      if (selectedMessageIndices.size === 0) return;
+      if (!confirm(`确定删除选中的 ${selectedMessageIndices.size} 条消息吗？`)) return;
+      const indices = Array.from(selectedMessageIndices).sort((a,b) => b - a);
+      const tx = db.transaction('messages', 'readwrite');
+      const store = tx.objectStore('messages');
+      for (const idx of indices) {
+        const msg = messages[idx];
+        if (msg && msg.id !== undefined) await store.delete(msg.id);
+        messages.splice(idx, 1);
+      }
+      await tx.done;
+      cancelSelectMode();
+      renderChat();
+    }
+
+    function setQuoteFromMessage(index) {
+      const msg = messages[index];
+      if (!msg) return;
+      pendingQuote = { id: msg.id, content: msg.content.length > 50 ? msg.content.substring(0, 50) + '...' : msg.content };
+      document.getElementById('msgInput').placeholder = '引用回复...';
+      document.getElementById('msgInput').focus();
+    }
+
     async function sendUserMessage() {
+      if (selectMode) return;
       const input = document.getElementById('msgInput');
       const text = input.value.trim();
       if (!text) return;
       const msg = { role: 'user', type: 'text', content: text, timestamp: getTimeString() };
-      if (pendingQuote) {
-        msg.quoted = pendingQuote;
-        pendingQuote = null;
-        input.placeholder = '说点什么...';
-      }
+      if (pendingQuote) { msg.quoted = pendingQuote; pendingQuote = null; input.placeholder = '说点什么...'; }
       messages.push(msg);
       await saveMessage(msg);
       incrementDailyCount();
@@ -722,11 +750,15 @@
       };
       input.click();
     }
+    function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 
     async function triggerAIReply() {
+      if (selectMode) return;
       if (messages.length === 0) return;
-      const lastMsg = messages[messages.length-1];
-      if (lastMsg.role === 'ai') return;
+      if (messages[messages.length-1].role === 'ai') return;
       if (!settings.apiUrl || !settings.apiKey) {
         const fake = { role: 'ai', type: 'text', content: '（请先配置 API）我也爱你~', timestamp: getTimeString() };
         messages.push(fake);
@@ -735,23 +767,34 @@
         renderChat();
         return;
       }
-      const placeholder = { role: 'ai', type: 'text', content: '正在输入…', timestamp: getTimeString() };
-      messages.push(placeholder);
-      await saveMessage(placeholder);
-      renderChat();
+      const inputArea = document.querySelector('.input-area');
+      const hint = document.createElement('div');
+      hint.className = 'typing-hint'; hint.id = 'typingHint'; hint.textContent = 'AI 正在输入…';
+      inputArea.parentNode.insertBefore(hint, inputArea);
       try {
-        const replyContent = await callAI();
-        messages.pop();
-        const segments = replyContent.split(/\n?---\n?/).filter(s => s.trim() !== '');
-        for (const seg of segments) {
-          const aiMsg = { role: 'ai', type: 'text', content: seg.trim(), timestamp: getTimeString() };
-          messages.push(aiMsg);
-          await saveMessage(aiMsg);
+        const reply = await callAI();
+        hint.remove();
+        const segments = reply.split(/\n?---\n?/).filter(s => s.trim() !== '');
+        if (segments.length > 0) {
+           // 第一条立即发送
+           const firstMsg = { role: 'ai', type: 'text', content: segments[0].trim(), timestamp: getTimeString() };
+           messages.push(firstMsg);
+           await saveMessage(firstMsg);
+           incrementDailyCount();
+           renderChat();
+
+           // 后续每段延迟 1.5 秒后再发送
+           for (let i = 1; i < segments.length; i++) {
+             await delay(1500); // 间隔1.5秒，可自行调整
+             const nextMsg = { role: 'ai', type: 'text', content: segments[i].trim(), timestamp: getTimeString() };
+             messages.push(nextMsg);
+             await saveMessage(nextMsg);
+             incrementDailyCount();
+             renderChat();
+          }
         }
-        incrementDailyCount();
-        renderChat();
-      } catch (e) {
-        messages.pop();
+      } catch(e) {
+        hint.remove();
         const errMsg = { role: 'ai', type: 'text', content: 'AI 回复失败: ' + e.message, timestamp: getTimeString() };
         messages.push(errMsg);
         await saveMessage(errMsg);
@@ -762,123 +805,121 @@
 
     async function callAI() {
       const url = settings.apiUrl.replace(/\/+$/, '') + '/v1/chat/completions';
-      let memoryContext = '';
+      let memoryCtx = '', annivCtx = '';
       const mem = settings.memories;
-      if (mem.core.length > 0) memoryContext += '核心记忆: ' + mem.core.map(m => m.event).join('; ') + '\n';
-      if (mem.important.length > 0) memoryContext += '重要事件: ' + mem.important.map(m => m.event).join('; ') + '\n';
-      if (mem.daily.length > 0) memoryContext += '日常记忆: ' + mem.daily.map(m => m.event).join('; ') + '\n';
-
-      let annivContext = '';
-      if (settings.anniversaries.length > 0) {
-        annivContext = '纪念日:\n' + settings.anniversaries.map(a => {
-          const today = new Date();
-          const target = new Date(a.date + 'T00:00:00');
-          const diffTime = a.type === 'countup' ? (today - target) : (target - today);
-          let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          if (diffDays < 0) diffDays = 0;
-          let display = diffDays + '天';
-          if (a.unit === 'months') display = Math.floor(diffDays / 30) + '个月';
-          else if (a.unit === 'years') display = (diffDays / 365).toFixed(1) + '年';
-          return `${a.title}：${a.type === 'countup' ? '已经' : '还有'} ${display}（${a.date}）`;
+      if (mem.core.length) memoryCtx += '核心记忆: ' + mem.core.map(m=>m.event).join('; ') + '\n';
+      if (mem.important.length) memoryCtx += '重要事件: ' + mem.important.map(m=>m.event).join('; ') + '\n';
+      if (mem.daily.length) memoryCtx += '日常记忆: ' + mem.daily.map(m=>m.event).join('; ') + '\n';
+      if (settings.anniversaries.length) {
+        annivCtx = '纪念日:\n' + settings.anniversaries.map(a => {
+          const now = new Date(), target = new Date(a.date + 'T00:00:00');
+          let diff = Math.ceil((a.type==='countup' ? now-target : target-now) / (86400000));
+          if (diff < 0) diff = 0;
+          let dis = diff + '天';
+          if (a.unit==='months') dis = Math.floor(diff/30) + '个月';
+          else if (a.unit==='years') dis = (diff/365).toFixed(1) + '年';
+          return `${a.title}：${a.type==='countup'?'已经':'还有'} ${dis}（${a.date}）`;
         }).join('\n');
       }
-
-      const totalCost = (settings.totalMessageCount * settings.apiPrice).toFixed(4);
-      const statsContext = `历史总消息数：${settings.totalMessageCount}，累计费用：¥${totalCost}。`;
-
-      const recentMessages = messages.slice(-(settings.contextRounds * 2));
-      const apiMessages = [
-        { role: 'system', content: `你是${settings.roleName}，${settings.roleInfo}。${memoryContext ? '记忆：\n' + memoryContext : ''}${annivContext ? annivContext + '\n' : ''}${statsContext}如果对话产生了值得记忆的内容，请在回复末尾加上 ---MEMORY:类别:事件:感受---（类别：core/important/daily）。你可以用 --- 分段发送多条消息。如果生成了文件内容，请在回复末尾用 ---FILE:文件名:文件内容--- 发送纯文本文档。请用恋人的语气回复。` }
-      ];
-      for (const m of recentMessages) {
-        let content = m.content;
-        if (m.type === 'image') content = '[用户发送了一张图片]';
-        else if (m.type === 'file') content = `[用户发送了文件: ${m.fileName}]\n内容: ${m.content}`;
-        apiMessages.push({ role: m.role === 'ai' ? 'assistant' : 'user', content });
-      }
-
-      const response = await fetch(url, {
+      const system = `你是${settings.roleName}，${settings.roleInfo}。${memoryCtx ? '记忆：\n' + memoryCtx : ''}${annivCtx ? annivCtx + '\n' : ''}你可以用 <think>...</think> 包裹思考过程。回复中可包含 ---MEMORY:类别:事件:感受--- 记录记忆，用 --- 分隔多条消息，用 ---FILE:文件名:内容--- 发送文件。`;
+      const recent = messages.slice(-(settings.contextRounds*2));
+      const msgs = [ { role: 'system', content: system } ];
+      recent.forEach(m => {
+        let c = m.content;
+        if (m.type==='image') c = '[用户发送了一张图片]';
+        else if (m.type==='file') c = `[用户发送了文件: ${m.fileName}]\n内容: ${m.content}`;
+        msgs.push({ role: m.role==='ai' ? 'assistant' : 'user', content: c });
+      });
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
-        body: JSON.stringify({ model: settings.model, messages: apiMessages, temperature: 0.9 })
+        body: JSON.stringify({ model: settings.model, messages: msgs, temperature: 0.9 })
       });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      let reply = data.choices[0].message.content;
-
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
+      let reply = d.choices[0].message.content;
       const memRegex = /---MEMORY:(\w+):(.+?):(.+?)---/g;
-      let match;
-      while ((match = memRegex.exec(reply)) !== null) {
-        const category = match[1].toLowerCase();
-        const event = match[2].trim();
-        const feeling = match[3].trim();
-        if (['core','important','daily'].includes(category)) {
-          settings.memories[category].push({ event, feeling, time: getFullTimeString() });
+      let m;
+      while ((m = memRegex.exec(reply))) {
+        const cat = m[1].toLowerCase();
+        if (['core','important','daily'].includes(cat)) {
+          settings.memories[cat].push({ event: m[2].trim(), feeling: m[3].trim(), time: getFullTimeString() });
         }
       }
       reply = reply.replace(/---MEMORY:\w+:.+?:.+?---/g, '').trim();
-
       const fileRegex = /---FILE:(.+?):([\s\S]*?)---/g;
-      while ((match = fileRegex.exec(reply)) !== null) {
-        const fileName = match[1].trim();
-        const fileContent = match[2].trim();
-        const fileMsg = { role: 'ai', type: 'file', content: fileContent, timestamp: getTimeString(), fileName, fileSize: formatSize(new Blob([fileContent]).size) };
+      while ((m = fileRegex.exec(reply))) {
+        const fileMsg = { role: 'ai', type: 'file', content: m[2].trim(), timestamp: getTimeString(), fileName: m[1].trim(), fileSize: formatSize(new Blob([m[2]]).size) };
         messages.push(fileMsg);
         await saveMessage(fileMsg);
       }
       reply = reply.replace(/---FILE:.+?:[\s\S]*?---/g, '').trim();
-
       await saveSetting('memories', settings.memories);
       return reply;
     }
 
-    // ========== 气泡菜单 ==========
+    // 气泡菜单
     function showBubbleMenu(index, x, y) {
       currentMenuMsgIndex = index;
       const menu = document.getElementById('bubbleMenu');
-      menu.style.left = x + 'px';
-      menu.style.top = y + 'px';
+      menu.style.left = x + 'px'; menu.style.top = y + 'px';
       menu.style.display = 'flex';
       setTimeout(() => document.addEventListener('click', hideBubbleMenu, { once: true }), 100);
     }
     function hideBubbleMenu() { document.getElementById('bubbleMenu').style.display = 'none'; }
-
-    function quoteMessage() {
-      hideBubbleMenu();
-      const msg = messages[currentMenuMsgIndex];
-      if (!msg) return;
-      pendingQuote = { id: msg.id, content: msg.content.length > 50 ? msg.content.substring(0, 50) + '...' : msg.content };
-      const input = document.getElementById('msgInput');
-      input.placeholder = '引用回复...';
-      input.focus();
-    }
-
+    function quoteMessage() { hideBubbleMenu(); setQuoteFromMessage(currentMenuMsgIndex); }
     async function deleteSingleMessage() {
       hideBubbleMenu();
       if (!confirm('确定删除这条消息吗？')) return;
-      const index = currentMenuMsgIndex;
-      const deleted = messages.splice(index, 1);
-      const tx = db.transaction('messages', 'readwrite');
-      const store = tx.objectStore('messages');
-      if (deleted[0]?.id !== undefined) await store.delete(deleted[0].id);
-      await tx.done;
+      const idx = currentMenuMsgIndex;
+      const del = messages.splice(idx, 1)[0];
+      if (del?.id) { const tx = db.transaction('messages', 'readwrite'); tx.objectStore('messages').delete(del.id); await tx.done; }
       renderChat();
     }
-
     async function deleteMessagesBelow() {
       hideBubbleMenu();
       if (!confirm('删除这条及之后的所有消息？')) return;
-      const toDelete = messages.splice(currentMenuMsgIndex);
+      const toDel = messages.splice(currentMenuMsgIndex);
       const tx = db.transaction('messages', 'readwrite');
-      const store = tx.objectStore('messages');
-      for (const m of toDelete) {
-        if (m.id !== undefined) await store.delete(m.id);
-      }
+      for (const m of toDel) if (m.id) tx.objectStore('messages').delete(m.id);
       await tx.done;
       renderChat();
     }
 
-    // ========== 记忆功能 ==========
+    // 日落归档
+    async function sunsetArchive() {
+      const now = new Date();
+      const hour = now.getHours();
+      const today = getDateString();
+      if ((hour === 12 || hour === 0) && settings.lastArchiveDate !== today) {
+        const todayMsgs = messages.filter(m => true);
+        if (todayMsgs.length && settings.apiUrl && settings.apiKey) {
+          const prompt = `请根据以下聊天记录整理记忆，核心/重要可不记，日常至少一条。格式：---MEMORY:类别:事件:感受---\n` + todayMsgs.map(m => `[${m.role==='user'?'我':settings.roleName}] ${m.content}`).join('\n');
+          try {
+            const res = await fetch(settings.apiUrl.replace(/\/+$/,'') + '/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
+              body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 0.5 })
+            });
+            if (res.ok) {
+              const d = await res.json();
+              const rep = d.choices[0].message.content;
+              const regex = /---MEMORY:(\w+):(.+?):(.+?)---/g;
+              let m;
+              while ((m = regex.exec(rep))) {
+                const cat = m[1].toLowerCase();
+                if (['core','important','daily'].includes(cat)) settings.memories[cat].push({ event: m[2].trim(), feeling: m[3].trim(), time: getFullTimeString() });
+              }
+              await saveSetting('memories', settings.memories);
+            }
+          } catch(e) { console.log('归档失败', e); }
+        }
+        settings.lastArchiveDate = today;
+        await saveSetting('lastArchiveDate', today);
+      }
+    }
+    function startArchiveTimer() { setInterval(sunsetArchive, 60000); }
+        // ========== 记忆功能 ==========
     function showAddMemoryForm(category) {
       currentEditIndex[category] = -1;
       const card = document.getElementById(category + 'EditCard');
@@ -954,8 +995,9 @@
       });
     }
 
-    // ========== 情侣头像 ==========
+    // ========== 情侣头像管理 ==========
     function openCoupleAvatarsPage() { renderCoupleList(); openSubPage('coupleAvatarsPage'); }
+
     function renderCoupleList() {
       const container = document.getElementById('coupleList');
       if (!container) return;
@@ -963,13 +1005,16 @@
       settings.coupleAvatars.forEach((pair, index) => {
         const div = document.createElement('div');
         div.className = 'couple-pair';
-        div.innerHTML = `<strong>${pair.name || '配对' + (index+1)}</strong>
-          <img src="${pair.my}" alt="我的头像"><img src="${pair.ai}" alt="AI头像">
+        div.innerHTML = `
+          <strong>${pair.name || '配对' + (index+1)}</strong>
+          <img src="${pair.my}" alt="我的头像">
+          <img src="${pair.ai}" alt="AI头像">
           <button onclick="selectCouplePair(${index})">应用</button>
           <button onclick="deleteCouplePair(${index})">删除</button>`;
         container.appendChild(div);
       });
     }
+
     function showAddCoupleForm() {
       document.getElementById('coupleAddCard').classList.add('active');
       document.getElementById('couplePairName').value = '';
@@ -978,7 +1023,11 @@
       document.getElementById('aiAvatarPreview').style.backgroundImage = '';
       document.getElementById('myAvatarPreview').style.backgroundImage = '';
     }
-    function hideAddCoupleForm() { document.getElementById('coupleAddCard').classList.remove('active'); }
+
+    function hideAddCoupleForm() {
+      document.getElementById('coupleAddCard').classList.remove('active');
+    }
+
     function previewAvatar(type) {
       const input = document.getElementById(type + 'AvatarInput');
       const preview = document.getElementById(type + 'AvatarPreview');
@@ -988,6 +1037,7 @@
         reader.readAsDataURL(input.files[0]);
       }
     }
+
     async function saveNewCouplePair() {
       const name = document.getElementById('couplePairName').value.trim();
       if (!name) { alert('请输入配对名称'); return; }
@@ -1001,6 +1051,7 @@
       hideAddCoupleForm();
       renderCoupleList();
     }
+
     async function selectCouplePair(index) {
       const pair = settings.coupleAvatars[index];
       if (!pair) return;
@@ -1009,11 +1060,13 @@
       renderChat();
       alert('已应用情侣头像 ' + (pair.name || ''));
     }
+
     async function deleteCouplePair(index) {
       settings.coupleAvatars.splice(index, 1);
       await saveSetting('coupleAvatars', settings.coupleAvatars);
       renderCoupleList();
     }
+
     async function selectCoupleAvatar() {
       if (settings.coupleAvatars.length === 0) { alert('请先到设置-情侣头像中添加配对'); return; }
       const names = settings.coupleAvatars.map(p => p.name || '未命名');
@@ -1030,6 +1083,7 @@
       updateRoleAvatarPreview();
       openSubPage('roleInfoPage');
     }
+
     async function saveRoleInfo() {
       settings.roleName = document.getElementById('roleName').value;
       settings.roleInfo = document.getElementById('roleExtraInfo').value;
@@ -1038,10 +1092,12 @@
       updateHeaderTitle();
       closeSubPage('roleInfoPage');
     }
+
     function updateRoleAvatarPreview() {
       const preview = document.getElementById('roleAvatarPreview');
       if (settings.roleAvatar) preview.style.backgroundImage = `url(${settings.roleAvatar})`;
     }
+
     async function changeRoleAvatar() {
       const file = await selectImageFile();
       if (!file) return;
@@ -1051,7 +1107,7 @@
       updateRoleAvatarPreview();
     }
 
-    // 工具
+    // ========== 通用工具 ==========
     function selectImageFile() {
       return new Promise(resolve => {
         const input = document.createElement('input');
@@ -1060,6 +1116,7 @@
         input.click();
       });
     }
+
     function fileToBase64(file) {
       return new Promise(resolve => {
         const reader = new FileReader();
@@ -1067,6 +1124,7 @@
         reader.readAsDataURL(file);
       });
     }
+
     function formatSize(bytes) {
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
@@ -1078,9 +1136,9 @@
       document.getElementById('apiUrl').value = settings.apiUrl;
       document.getElementById('apiKey').value = settings.apiKey;
       document.getElementById('modelName').value = settings.model;
-      document.getElementById('apiPriceInput').value = settings.apiPrice;
       openSubPage('apiConfigPage');
     }
+
     async function fetchModels() {
       const url = document.getElementById('apiUrl').value.replace(/\/+$/, '') + '/v1/models';
       const key = document.getElementById('apiKey').value;
@@ -1096,25 +1154,25 @@
         alert('模型列表已加载');
       } catch (e) { alert('获取失败: ' + e.message); }
     }
+
     async function saveApiConfig() {
       settings.apiUrl = document.getElementById('apiUrl').value.trim();
       settings.apiKey = document.getElementById('apiKey').value.trim();
       const selected = document.getElementById('modelSelect').value;
       settings.model = selected || document.getElementById('modelName').value.trim();
-      settings.apiPrice = parseFloat(document.getElementById('apiPriceInput').value) || 0;
       await saveSetting('apiUrl', settings.apiUrl);
       await saveSetting('apiKey', settings.apiKey);
       await saveSetting('model', settings.model);
-      await saveSetting('apiPrice', settings.apiPrice);
       closeSubPage('apiConfigPage');
     }
 
-    // 搜索等
+    // ========== 搜索、对话设置、数据管理 ==========
     function openSearch() {
       document.getElementById('searchKeyword').value = '';
       document.getElementById('searchResults').innerHTML = '';
       openSubPage('searchPage');
     }
+
     function performSearch() {
       const keyword = document.getElementById('searchKeyword').value.trim().toLowerCase();
       const resultsDiv = document.getElementById('searchResults');
@@ -1137,20 +1195,24 @@
         resultsDiv.appendChild(div);
       });
     }
+
     function openDialogSettings() {
       document.getElementById('contextRounds').value = settings.contextRounds;
       openSubPage('dialogSettingsPage');
     }
+
     async function saveDialogSettings() {
       settings.contextRounds = parseInt(document.getElementById('contextRounds').value) || 4;
       await saveSetting('contextRounds', settings.contextRounds);
       closeSubPage('dialogSettingsPage');
     }
+
     function openDataManage() {
       document.getElementById('importFile').value = '';
       document.getElementById('importStatus').textContent = '';
       openSubPage('dataManagePage');
     }
+
     async function exportData() {
       const tx = db.transaction('messages', 'readonly');
       const store = tx.objectStore('messages');
@@ -1168,6 +1230,7 @@
       URL.revokeObjectURL(url);
       alert('导出成功！');
     }
+
     async function importData() {
       const fileInput = document.getElementById('importFile');
       const statusDiv = document.getElementById('importStatus');
@@ -1185,7 +1248,9 @@
           tx.oncomplete = () => resolve();
           tx.onerror = (e) => reject(e);
         });
-        for (const [key, value] of Object.entries(data.settings)) await saveSetting(key, value);
+        for (const [key, value] of Object.entries(data.settings)) {
+          await saveSetting(key, value);
+        }
         const tx = db.transaction('messages', 'readwrite');
         const store = tx.objectStore('messages');
         for (const msg of data.messages) {
@@ -1204,7 +1269,7 @@
       }
     }
 
-    // 纪念日
+    // ========== 纪念日 ==========
     function showAddAnniversaryForm() {
       currentAnnivIndex = -1;
       document.getElementById('annivTitle').value = '';
@@ -1214,6 +1279,7 @@
       document.getElementById('annivColor').value = '#b8a99a';
       document.getElementById('annivEditCard').classList.add('active');
     }
+
     function showEditAnniversaryForm(index) {
       currentAnnivIndex = index;
       const a = settings.anniversaries[index];
@@ -1224,10 +1290,12 @@
       document.getElementById('annivColor').value = a.color;
       document.getElementById('annivEditCard').classList.add('active');
     }
+
     function hideAnnivForm() {
       document.getElementById('annivEditCard').classList.remove('active');
       currentAnnivIndex = -1;
     }
+
     async function saveAnniversary() {
       const title = document.getElementById('annivTitle').value.trim();
       const date = document.getElementById('annivDate').value;
@@ -1242,12 +1310,14 @@
       hideAnnivForm();
       renderAnniversaries();
     }
+
     async function deleteAnniversary(index) {
       if (!confirm('删除这个纪念日吗？')) return;
       settings.anniversaries.splice(index, 1);
       await saveSetting('anniversaries', settings.anniversaries);
       renderAnniversaries();
     }
+
     function renderAnniversaries() {
       const grid = document.getElementById('annivGrid');
       if (!grid) return;
@@ -1275,7 +1345,7 @@
       });
     }
 
-    // 热力图
+    // ========== 热力图 ==========
     function renderHeatmap() {
       const year = heatmapYearMonth.getFullYear();
       const month = heatmapYearMonth.getMonth();
@@ -1309,13 +1379,13 @@
       renderHeatmap();
     }
 
-    // 设置页交互
+    // ========== 设置页面交互 ==========
     function openSettings() { document.getElementById('settingsOverlay').classList.add('active'); }
     function closeSettings() { document.getElementById('settingsOverlay').classList.remove('active'); }
     function openSubPage(id) { document.getElementById(id).classList.add('active'); }
     function closeSubPage(id) { document.getElementById(id).classList.remove('active'); }
 
-    // Service Worker
+    // ========== Service Worker ==========
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/Palino-s-home/sw.js')
         .then(reg => {
@@ -1330,17 +1400,33 @@
         }).catch(err => console.log('SW 注册失败', err));
     }
 
-    // 启动
+    // ========== 启动 ==========
     (async function init() {
       await openDB();
       await loadSettings();
       await loadMessages();
+
+      // 清理旧版残留“正在输入…”
+      const cleanTx = db.transaction('messages', 'readwrite');
+      const cleanStore = cleanTx.objectStore('messages');
+      const allMsgs = await new Promise(r => { const req = cleanStore.getAll(); req.onsuccess = () => r(req.result); });
+      for (const m of allMsgs) {
+        if (m.role === 'ai' && m.content === '正在输入…') {
+          await cleanStore.delete(m.id);
+        }
+      }
+      await cleanTx.done;
+      await loadMessages();
       renderChat();
+
       const msgInput = document.getElementById('msgInput');
       msgInput.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 120) + 'px';
       });
+
+      // 启动归档定时器
+      startArchiveTimer();
     })();
   </script>
 </body>
