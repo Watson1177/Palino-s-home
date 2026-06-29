@@ -188,6 +188,11 @@
     .heatmap-cell.empty { background: #faf8f5; color: #ccc; }
 
     .typing-hint { text-align: center; color: #999; font-size: 13px; padding: 4px; }
+
+    .quoted-highlight {
+  background: rgba(200, 180, 150, 0.2);
+  border-radius: 8px;
+}
   </style>
 </head>
 <body>
@@ -651,6 +656,10 @@
     time.className = 'timestamp'; time.textContent = msg.timestamp || '';
     wrapper.appendChild(time);
 
+    if (pendingQuote && pendingQuote.id === msg.id) {
+  wrapper.classList.add('quoted-highlight');
+}
+
     if (msg.role === 'user') { row.appendChild(wrapper); row.appendChild(avatar); }
     else { row.appendChild(avatar); row.appendChild(wrapper); }
 
@@ -728,9 +737,19 @@
     function setQuoteFromMessage(index) {
       const msg = messages[index];
       if (!msg) return;
+      // 如果当前已有引用，且双击的是同一条消息 → 取消引用
+      if (pendingQuote && pendingQuote.id === msg.id) {
+         pendingQuote = null;
+         document.getElementById('msgInput').placeholder = '说点什么...';
+         document.getElementById('msgInput').focus();
+         renderChat(); // 刷新以取消高亮
+         return;
+      }
+      // 设置新引用（或切换引用到另一条消息）
       pendingQuote = { id: msg.id, content: msg.content.length > 50 ? msg.content.substring(0, 50) + '...' : msg.content };
       document.getElementById('msgInput').placeholder = '引用回复...';
       document.getElementById('msgInput').focus();
+      renderChat(); // 刷新以高亮被引用消息
     }
 
     async function sendUserMessage() {
