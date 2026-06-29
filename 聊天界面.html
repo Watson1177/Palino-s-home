@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>AI 恋人</title>
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22AI%20%E6%81%8B%E4%BA%BA%22%2C%22short_name%22%3A%22AI%E6%81%8B%E4%BA%BA%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F5F1EA%22%2C%22theme_color%22%3A%22%23F5F1EA%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Ctext%20y%3D'.9em'%20font-size%3D'90'%3E%F0%9F%92%9E%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22100x100%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #F5F1EA;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background: #F5F1EA;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e0d6cb;
+    }
+    .header h1 { font-size: 18px; color: #333; }
+    .settings-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #555; }
+    .chat-container { flex: 1; overflow-y: auto; padding: 10px 12px; }
+    .message-row { display: flex; margin-bottom: 12px; align-items: flex-end; }
+    .message-row.me { justify-content: flex-end; }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 8px; background: #ccc; background-size: cover;
+      background-position: center; flex-shrink: 0;
+    }
+    .bubble {
+      max-width: 75%; padding: 10px 14px; background: rgba(215, 201, 184, 0.9);
+      border-radius: 12px; position: relative; word-break: break-word; font-size: 15px; line-height: 1.4;
+      box-shadow: 0 2px 2px rgba(184, 169, 154, 0.4);
+    }
+    .message-row.me .bubble { border-bottom-right-radius: 4px; }
+    .message-row.ai .bubble { border-bottom-left-radius: 4px; }
+    .message-row .avatar { margin: 0 8px; }
+    .timestamp { font-size: 11px; color: #9e8f7f; margin-top: 4px; text-align: right; }
+    .me .timestamp { text-align: left; }
+    .input-area {
+      background: #fff; padding: 8px 12px; display: flex; gap: 8px; border-top: 1px solid #e0d6cb;
+    }
+    .input-area input {
+      flex: 1; padding: 10px 16px; border: none; border-radius: 24px; background: #F5F1EA; font-size: 15px; outline: none;
+    }
+    .send-btn, .ai-btn {
+      background: #b8a99a; border: none; color: white; font-size: 18px; padding: 0 16px; border-radius: 24px; cursor: pointer; white-space: nowrap;
+    }
+    .ai-btn { background: #c69c6d; }
+    /* 设置覆盖层 */
+    .settings-overlay {
+      position: fixed; top:0; left:0; width:100%; height:100%; background:#F5F1EA; z-index:10; display:none; flex-direction:column;
+    }
+    .settings-overlay.active { display:flex; }
+    .settings-header {
+      background:#F5F1EA; padding:12px 16px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #e0d6cb;
+    }
+    .settings-header button { background:none; border:none; font-size:20px; cursor:pointer; }
+    .settings-list { flex:1; overflow-y:auto; }
+    .settings-item {
+      display:flex; align-items:center; padding:14px 16px; border-bottom:1px solid #e8e0d5; cursor:pointer; background:#F5F1EA;
+    }
+    .settings-item:active { background:#e8e0d5; }
+    .settings-item .icon { margin-right:12px; font-size:22px; }
+    .settings-item .text { flex:1; font-size:16px; color:#333; }
+    .settings-item .arrow { color:#999; }
+    .sub-page {
+      position:fixed; top:0; left:0; width:100%; height:100%; background:#F5F1EA; z-index:20; display:none; flex-direction:column;
+    }
+    .sub-page.active { display:flex; }
+    .sub-header {
+      background:#F5F1EA; padding:12px 16px; display:flex; align-items:center; gap:10px; border-bottom:1px solid #e0d6cb;
+    }
+    .sub-content { flex:1; padding:16px; overflow-y:auto; }
+    .sub-content input, .sub-content textarea {
+      width:100%; padding:10px; margin-top:6px; margin-bottom:16px; border:1px solid #d4c9bb; border-radius:8px; background:#fff; font-size:15px;
+    }
+    .sub-content button { background:#b8a99a; color:white; border:none; padding:10px 20px; border-radius:8px; font-size:15px; cursor:pointer; }
+    .avatar-edit { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+    .avatar-edit .avatar-preview { width:60px; height:60px; border-radius:8px; background-size:cover; background-position:center; border:2px solid #d4c9bb; }
+    .couple-pair { display:flex; gap:12px; align-items:center; margin-bottom:12px; cursor:pointer; }
+    .couple-pair img { width:50px; height:50px; border-radius:8px; object-fit:cover; }
+    .search-result { padding:12px; border-bottom:1px solid #e8e0d5; cursor:pointer; }
+    .search-result:active { background:#e8e0d5; }
+    .import-status { margin-top:8px; font-weight:bold; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>💞 我的 AI 恋人</h1>
+    <button class="settings-btn" onclick="openSettings()">⚙️</button>
+  </div>
+
+  <div class="chat-container" id="chatContainer"></div>
+
+  <div class="input-area">
+    <input type="text" id="msgInput" placeholder="说点什么..." autofocus>
+    <button class="send-btn" onclick="sendUserMessage()" title="发送消息（不触发AI）">📤</button>
+    <button class="ai-btn" onclick="triggerAIReply()" title="让AI回复">✨</button>
+  </div>
+
+  <!-- 设置页覆盖层 -->
+  <div class="settings-overlay" id="settingsOverlay">
+    <div class="settings-header">
+      <button onclick="closeSettings()">← 返回</button>
+      <h2>设置</h2>
+    </div>
+    <div class="settings-list">
+      <div class="settings-item" onclick="openRoleInfo()"><span class="icon">👤</span><span class="text">角色信息</span><span class="arrow">›</span></div>
+      <div class="settings-item" onclick="openApiConfig()"><span class="icon">🔑</span><span class="text">API 配置</span><span class="arrow">›</span></div>
+      <div class="settings-item" onclick="openSearch()"><span class="icon">🔍</span><span class="text">聊天记录查找</span><span class="arrow">›</span></div>
+      <div class="settings-item" onclick="openDialogSettings()"><span class="icon">⚙️</span><span class="text">对话设置</span><span class="arrow">›</span></div>
+      <div class="settings-item" onclick="openDataManage()"><span class="icon">💾</span><span class="text">数据管理</span><span class="arrow">›</span></div>
+    </div>
+  </div>
+
+  <!-- 子页面：角色信息 -->
+  <div class="sub-page" id="roleInfoPage">
+    <div class="sub-header"><button onclick="closeSubPage('roleInfoPage')">← 返回</button><h3>角色信息</h3></div>
+    <div class="sub-content">
+      <div class="avatar-edit">
+        <div class="avatar-preview" id="roleAvatarPreview" style="background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>')"></div>
+        <button onclick="changeRoleAvatar()">更换头像</button>
+      </div>
+      <label>姓名</label><input type="text" id="roleName" placeholder="AI 名字">
+      <label>基础信息</label><textarea id="roleInfo" rows="3" placeholder="性格、爱好等"></textarea>
+      <button onclick="saveRoleInfo()">保存</button>
+    </div>
+  </div>
+
+  <!-- API 配置 -->
+  <div class="sub-page" id="apiConfigPage">
+    <div class="sub-header"><button onclick="closeSubPage('apiConfigPage')">← 返回</button><h3>API 配置</h3></div>
+    <div class="sub-content">
+      <label>API 地址（如 https://api.openai.com）</label><input type="text" id="apiUrl" placeholder="https://api.openai.com">
+      <label>API 密钥</label><input type="password" id="apiKey" placeholder="sk-...">
+      <label>模型名称</label><input type="text" id="modelName" placeholder="gpt-3.5-turbo">
+      <button onclick="fetchModels()">提取模型列表</button>
+      <select id="modelSelect" style="width:100%; padding:10px; margin-top:8px;"></select>
+      <br><br>
+      <button onclick="saveApiConfig()">保存</button>
+    </div>
+  </div>
+
+  <!-- 聊天记录查找 -->
+  <div class="sub-page" id="searchPage">
+    <div class="sub-header"><button onclick="closeSubPage('searchPage')">← 返回</button><h3>查找聊天记录</h3></div>
+    <div class="sub-content">
+      <input type="text" id="searchKeyword" placeholder="输入关键词" oninput="performSearch()">
+      <div id="searchResults"></div>
+    </div>
+  </div>
+
+  <!-- 对话设置 -->
+  <div class="sub-page" id="dialogSettingsPage">
+    <div class="sub-header"><button onclick="closeSubPage('dialogSettingsPage')">← 返回</button><h3>对话设置</h3></div>
+    <div class="sub-content">
+      <label>上下文轮数（每轮包含你一句、AI一句）</label>
+      <input type="number" id="contextRounds" min="1" max="20" value="4">
+      <button onclick="saveDialogSettings()">保存</button>
+    </div>
+  </div>
+
+  <!-- 数据管理（导出/导入） -->
+  <div class="sub-page" id="dataManagePage">
+    <div class="sub-header"><button onclick="closeSubPage('dataManagePage')">← 返回</button><h3>数据管理</h3></div>
+    <div class="sub-content">
+      <p>将你的聊天记录和所有设置备份为文件，或从备份文件恢复。</p>
+      <button onclick="exportData()">📤 导出数据</button>
+      <br><br>
+      <label>📥 导入数据（选择之前导出的 .json 文件）</label>
+      <input type="file" id="importFile" accept=".json" onchange="importData()">
+      <div id="importStatus" class="import-status"></div>
+    </div>
+  </div>
+
+  <script>
+    // ========== 数据库相关 ==========
+    const DB_NAME = 'AiLoverDB';
+    let db;
+    let messages = [];
+    let settings = {
+      roleName: '小爱', roleInfo: '温柔体贴', roleAvatar: '',
+      apiUrl: '', apiKey: '', model: 'gpt-3.5-turbo', contextRounds: 4,
+      coupleAvatars: []
+    };
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('messages')) db.createObjectStore('messages', { keyPath: 'id', autoIncrement: true });
+          if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+        };
+        request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+        request.onerror = (e) => reject(e);
+      });
+    }
+
+    async function loadMessages() {
+      const tx = db.transaction('messages', 'readonly');
+      const store = tx.objectStore('messages');
+      const all = await new Promise(resolve => { const req = store.getAll(); req.onsuccess = () => resolve(req.result); });
+      messages = all.sort((a,b) => a.id - b.id);
+      renderChat();
+    }
+
+    async function saveMessage(msg) {
+      const tx = db.transaction('messages', 'readwrite');
+      const store = tx.objectStore('messages');
+      await store.add(msg);
+    }
+
+    async function loadSettings() {
+      const tx = db.transaction('settings', 'readonly');
+      const store = tx.objectStore('settings');
+      const keys = ['roleName','roleInfo','roleAvatar','apiUrl','apiKey','model','contextRounds','coupleAvatars'];
+      for (let k of keys) {
+        const req = store.get(k);
+        const result = await new Promise(resolve => { req.onsuccess = () => resolve(req.result); });
+        if (result !== undefined) settings[k] = result.value;
+      }
+    }
+
+    async function saveSetting(key, value) {
+      const tx = db.transaction('settings', 'readwrite');
+      const store = tx.objectStore('settings');
+      await store.put({ key, value });
+    }
+
+    function getTimeString() {
+      const now = new Date();
+      return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    }
+
+    // ========== 聊天渲染 ==========
+    function renderChat() {
+      const container = document.getElementById('chatContainer');
+      container.innerHTML = '';
+      messages.forEach(msg => {
+        const row = document.createElement('div');
+        row.className = `message-row ${msg.role === 'user' ? 'me' : 'ai'}`;
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        const avatarSrc = msg.role === 'user' ? (settings.coupleAvatars.length > 0 ? settings.coupleAvatars[0]?.my : '') : (settings.roleAvatar || '');
+        if (avatarSrc) {
+          avatar.style.backgroundImage = `url(${avatarSrc})`;
+        } else {
+          avatar.style.background = msg.role === 'user' ? '#a0c4ff' : '#ffc6ff';
+          avatar.style.display = 'flex';
+          avatar.style.alignItems = 'center';
+          avatar.style.justifyContent = 'center';
+          avatar.style.fontSize = '20px';
+          avatar.textContent = msg.role === 'user' ? '👤' : '🤖';
+        }
+        if (msg.role === 'user') {
+          avatar.addEventListener('contextmenu', e => { e.preventDefault(); openCoupleAvatarPicker(); });
+          avatar.addEventListener('touchstart', function(e) { this.holdTimer = setTimeout(() => openCoupleAvatarPicker(), 600); });
+          avatar.addEventListener('touchend', function(e) { clearTimeout(this.holdTimer); });
+        }
+        const bubbleWrapper = document.createElement('div');
+        bubbleWrapper.style.display = 'flex';
+        bubbleWrapper.style.flexDirection = 'column';
+        bubbleWrapper.style.maxWidth = '75%';
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = msg.content;
+        const time = document.createElement('div');
+        time.className = 'timestamp';
+        time.textContent = msg.timestamp || '';
+        bubbleWrapper.appendChild(bubble);
+        bubbleWrapper.appendChild(time);
+        if (msg.role === 'user') {
+          row.appendChild(bubbleWrapper);
+          row.appendChild(avatar);
+        } else {
+          row.appendChild(avatar);
+          row.appendChild(bubbleWrapper);
+        }
+        container.appendChild(row);
+      });
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // ========== 消息操作 ==========
+    async function sendUserMessage() {
+      const input = document.getElementById('msgInput');
+      const text = input.value.trim();
+      if (!text) return;
+      const msg = { role: 'user', content: text, timestamp: getTimeString() };
+      messages.push(msg);
+      await saveMessage(msg);
+      input.value = '';
+      renderChat();
+    }
+
+    async function triggerAIReply() {
+      if (messages.length === 0) return;
+      const lastMsg = messages[messages.length-1];
+      if (lastMsg.role === 'ai') return;
+      if (!settings.apiUrl || !settings.apiKey) {
+        const fake = { role: 'ai', content: '（请先配置 API）我也爱你~', timestamp: getTimeString() };
+        messages.push(fake);
+        await saveMessage(fake);
+        renderChat();
+        return;
+      }
+      const aiPlaceholder = { role: 'ai', content: '正在输入…', timestamp: getTimeString() };
+      messages.push(aiPlaceholder);
+      await saveMessage(aiPlaceholder);
+      renderChat();
+      try {
+        const replyContent = await callAI();
+        messages.pop();
+        const realReply = { role: 'ai', content: replyContent, timestamp: getTimeString() };
+        messages.push(realReply);
+        await saveMessage(realReply);
+        renderChat();
+      } catch (e) {
+        messages.pop();
+        const errMsg = { role: 'ai', content: 'AI 回复失败: ' + e.message, timestamp: getTimeString() };
+        messages.push(errMsg);
+        await saveMessage(errMsg);
+        renderChat();
+      }
+    }
+
+    async function callAI() {
+      const url = settings.apiUrl.replace(/\/+$/, '') + '/v1/chat/completions';
+      const systemPrompt = `你是${settings.roleName}，${settings.roleInfo}。请用恋人的语气回复。`;
+      const rounds = settings.contextRounds || 4;
+      const recentMessages = messages.slice(-(rounds * 2));
+      const apiMessages = [
+        { role: 'system', content: systemPrompt },
+        ...recentMessages.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.content }))
+      ];
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
+        body: JSON.stringify({ model: settings.model, messages: apiMessages, temperature: 0.9 })
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      return data.choices[0].message.content;
+    }
+
+    // ========== 设置页交互 ==========
+    function openSettings() { document.getElementById('settingsOverlay').classList.add('active'); }
+    function closeSettings() { document.getElementById('settingsOverlay').classList.remove('active'); }
+    function openSubPage(id) { document.getElementById(id).classList.add('active'); }
+    function closeSubPage(id) { document.getElementById(id).classList.remove('active'); }
+
+    function openRoleInfo() {
+      document.getElementById('roleName').value = settings.roleName;
+      document.getElementById('roleInfo').value = settings.roleInfo;
+      updateRoleAvatarPreview();
+      openSubPage('roleInfoPage');
+    }
+    async function saveRoleInfo() {
+      settings.roleName = document.getElementById('roleName').value;
+      settings.roleInfo = document.getElementById('roleInfo').value;
+      await saveSetting('roleName', settings.roleName);
+      await saveSetting('roleInfo', settings.roleInfo);
+      closeSubPage('roleInfoPage');
+    }
+    function updateRoleAvatarPreview() {
+      const preview = document.getElementById('roleAvatarPreview');
+      if (settings.roleAvatar) preview.style.backgroundImage = `url(${settings.roleAvatar})`;
+    }
+    async function changeRoleAvatar() {
+      const file = await selectImageFile();
+      if (!file) return;
+      const base64 = await fileToBase64(file);
+      settings.roleAvatar = base64;
+      await saveSetting('roleAvatar', base64);
+      updateRoleAvatarPreview();
+    }
+    function selectImageFile() {
+      return new Promise(resolve => {
+        const input = document.createElement('input');
+        input.type = 'file'; input.accept = 'image/*';
+        input.onchange = () => resolve(input.files[0]);
+        input.click();
+      });
+    }
+    function fileToBase64(file) {
+      return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function openApiConfig() {
+      document.getElementById('apiUrl').value = settings.apiUrl;
+      document.getElementById('apiKey').value = settings.apiKey;
+      document.getElementById('modelName').value = settings.model;
+      openSubPage('apiConfigPage');
+    }
+    async function fetchModels() {
+      const url = document.getElementById('apiUrl').value.replace(/\/+$/, '') + '/v1/models';
+      const key = document.getElementById('apiKey').value;
+      try {
+        const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${key}` } });
+        const data = await resp.json();
+        const select = document.getElementById('modelSelect');
+        select.innerHTML = '';
+        data.data.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id; opt.textContent = m.id; select.appendChild(opt);
+        });
+        alert('模型列表已加载');
+      } catch (e) { alert('获取失败: ' + e.message); }
+    }
+    async function saveApiConfig() {
+      settings.apiUrl = document.getElementById('apiUrl').value.trim();
+      settings.apiKey = document.getElementById('apiKey').value.trim();
+      const selected = document.getElementById('modelSelect').value;
+      settings.model = selected || document.getElementById('modelName').value.trim();
+      await saveSetting('apiUrl', settings.apiUrl);
+      await saveSetting('apiKey', settings.apiKey);
+      await saveSetting('model', settings.model);
+      closeSubPage('apiConfigPage');
+    }
+
+    function openSearch() {
+      document.getElementById('searchKeyword').value = '';
+      document.getElementById('searchResults').innerHTML = '';
+      openSubPage('searchPage');
+    }
+    function performSearch() {
+      const keyword = document.getElementById('searchKeyword').value.trim().toLowerCase();
+      const resultsDiv = document.getElementById('searchResults');
+      resultsDiv.innerHTML = '';
+      if (!keyword) return;
+      const matches = messages.filter(m => m.content.toLowerCase().includes(keyword));
+      matches.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'search-result';
+        const snippet = m.content.substring(0, 50) + (m.content.length > 50 ? '...' : '');
+        div.textContent = `[${m.role === 'user' ? '我' : settings.roleName}] ${snippet}`;
+        div.onclick = () => {
+          closeSubPage('searchPage');
+          const index = messages.findIndex(msg => msg.id === m.id);
+          if (index !== -1) document.getElementById('chatContainer').children[index]?.scrollIntoView({ behavior: 'smooth' });
+        };
+        resultsDiv.appendChild(div);
+      });
+    }
+
+    function openDialogSettings() {
+      document.getElementById('contextRounds').value = settings.contextRounds;
+      openSubPage('dialogSettingsPage');
+    }
+    async function saveDialogSettings() {
+      settings.contextRounds = parseInt(document.getElementById('contextRounds').value) || 4;
+      await saveSetting('contextRounds', settings.contextRounds);
+      closeSubPage('dialogSettingsPage');
+    }
+
+    async function openCoupleAvatarPicker() {
+      const choice = confirm('长按更换情侣头像\n确定选择你和 AI 的配套头像？');
+      if (!choice) return;
+      const myFile = await selectImageFile();
+      if (!myFile) return;
+      const aiFile = await selectImageFile();
+      if (!aiFile) return;
+      const myBase64 = await fileToBase64(myFile);
+      const aiBase64 = await fileToBase64(aiFile);
+      settings.coupleAvatars.push({ my: myBase64, ai: aiBase64 });
+      await saveSetting('coupleAvatars', settings.coupleAvatars);
+      settings.roleAvatar = aiBase64;
+      await saveSetting('roleAvatar', aiBase64);
+      renderChat();
+      alert('情侣头像已更新！');
+    }
+
+    // ========== 数据导出/导入 ==========
+    function openDataManage() {
+      document.getElementById('importFile').value = ''; // 清空上次选择
+      document.getElementById('importStatus').textContent = '';
+      openSubPage('dataManagePage');
+    }
+
+    async function exportData() {
+      // 获取当前完整数据
+      const allMessages = await getAllMessages();
+      const allSettings = {};
+      const keys = ['roleName','roleInfo','roleAvatar','apiUrl','apiKey','model','contextRounds','coupleAvatars'];
+      for (let k of keys) {
+        allSettings[k] = settings[k];
+      }
+      const exportObj = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        messages: allMessages,
+        settings: allSettings
+      };
+      const jsonStr = JSON.stringify(exportObj, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ai-lover-backup-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      alert('数据已导出，文件已开始下载。');
+    }
+
+    async function getAllMessages() {
+      const tx = db.transaction('messages', 'readonly');
+      const store = tx.objectStore('messages');
+      return new Promise(resolve => {
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result);
+      });
+    }
+
+    async function importData() {
+      const fileInput = document.getElementById('importFile');
+      const statusDiv = document.getElementById('importStatus');
+      if (!fileInput.files.length) return;
+      const file = fileInput.files[0];
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (!data.messages || !data.settings) throw new Error('无效的备份文件格式');
+        // 确认覆盖
+        if (!confirm('导入将覆盖当前所有聊天记录和设置，确定继续吗？')) return;
+        // 清空数据库
+        await clearDatabase();
+        // 写入设置
+        for (const [key, value] of Object.entries(data.settings)) {
+          await saveSetting(key, value);
+        }
+        // 写入消息（注意ID可能会重新生成，保持原有id属性）
+        const tx = db.transaction('messages', 'readwrite');
+        const store = tx.objectStore('messages');
+        for (const msg of data.messages) {
+          // 保留原始id（如果存在），否则自动生成
+          if (msg.id) {
+            await store.put(msg);
+          } else {
+            await store.add(msg);
+          }
+        }
+        await tx.done;
+        // 重新加载到内存
+        await loadSettings();
+        await loadMessages();
+        statusDiv.textContent = '✅ 导入成功！聊天记录和设置已恢复。';
+        statusDiv.style.color = 'green';
+        // 清空文件选择
+        fileInput.value = '';
+      } catch (e) {
+        statusDiv.textContent = '❌ 导入失败：' + e.message;
+        statusDiv.style.color = 'red';
+      }
+    }
+
+    async function clearDatabase() {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(['messages', 'settings'], 'readwrite');
+        const msgStore = tx.objectStore('messages');
+        const setStore = tx.objectStore('settings');
+        msgStore.clear();
+        setStore.clear();
+        tx.oncomplete = () => resolve();
+        tx.onerror = (e) => reject(e);
+      });
+    }
+
+    // ========== Service Worker 自动更新 ==========
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        self.addEventListener('install', event => { self.skipWaiting(); });
+        self.addEventListener('activate', event => { event.waitUntil(clients.claim()); });
+        self.addEventListener('fetch', event => {
+          event.respondWith(
+            caches.match(event.request).then(cached => {
+              return fetch(event.request).then(response => {
+                if (response && response.status === 200) {
+                  const clone = response.clone();
+                  caches.open('v1').then(cache => cache.put(event.request, clone));
+                }
+                return response;
+              }).catch(() => cached);
+            })
+          );
+        });
+      `;
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).then(reg => {
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              if (confirm('发现新版本，点击确定刷新页面')) window.location.reload();
+            }
+          });
+        });
+      });
+    }
+
+    // 启动
+    (async function init() {
+      await openDB();
+      await loadSettings();
+      await loadMessages();
+      renderChat();
+    })();
+  </script>
+</body>
+</html>
