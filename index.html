@@ -116,7 +116,6 @@
     .memory-actions { display:flex; gap:6px; }
     .memory-actions button { background:none; border:none; cursor:pointer; font-size:16px; }
 
-    /* 记忆编辑卡片 */
     .memory-edit-card {
       background: #fff;
       border-radius: 12px;
@@ -163,6 +162,82 @@
       background:rgba(215,201,184,0.4); border-radius:6px; padding:4px 8px; margin-top:4px;
       font-size:12px; color:#8a7b6e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
     }
+
+    /* 纪念日/统计 */
+    .anniv-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .anniv-card {
+      border-radius: 12px;
+      padding: 12px;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      aspect-ratio: 1 / 1;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.1s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      background: #b8a99a;
+    }
+    .anniv-card:active { transform: scale(0.97); }
+    .anniv-card .title { font-size: 14px; font-weight: bold; }
+    .anniv-card .days { font-size: 28px; font-weight: bold; margin: 4px 0; }
+    .anniv-card .subtitle { font-size: 12px; opacity: 0.9; }
+
+    .heatmap-container {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .heatmap-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .heatmap-month { font-size: 16px; font-weight: bold; color: #333; }
+    .heatmap-nav { display: flex; gap: 8px; }
+    .heatmap-nav button {
+      background: #f0ece6;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      text-align: center;
+    }
+    .heatmap-cell {
+      aspect-ratio: 1;
+      border-radius: 4px;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      background: #f5f1ea;
+    }
+    .heatmap-cell.empty { background: #faf8f5; color: #ccc; }
+
+    .stats-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .stats-box h3 { margin-bottom: 8px; color: #555; }
+    .stats-box .amount { font-size: 24px; color: #b8a99a; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -239,12 +314,64 @@
         </div>
       </div>
     </div>
+
+    <!-- 纪念日/统计页面 -->
+    <div class="page" id="journalPage">
+      <div class="sub-content">
+        <h3 style="margin-bottom:12px;">💕 纪念日</h3>
+        <div class="anniv-grid" id="annivGrid"></div>
+        <button onclick="showAddAnniversaryForm()">＋ 添加纪念日</button>
+        <div class="memory-edit-card" id="annivEditCard">
+          <label>标题</label>
+          <input type="text" id="annivTitle">
+          <label>日期</label>
+          <input type="date" id="annivDate">
+          <label>类型</label>
+          <select id="annivType" style="width:100%; padding:10px; margin-bottom:12px; border:1px solid #d4c9bb; border-radius:8px;">
+            <option value="countup">正数日（从那天至今）</option>
+            <option value="countdown">倒数日（距离那天还有）</option>
+          </select>
+          <label>显示单位</label>
+          <select id="annivUnit" style="width:100%; padding:10px; margin-bottom:12px; border:1px solid #d4c9bb; border-radius:8px;">
+            <option value="days">天</option>
+            <option value="months">月</option>
+            <option value="years">年</option>
+          </select>
+          <label>卡片颜色</label>
+          <input type="color" id="annivColor" value="#b8a99a" style="width:100%; height:40px; border:none; border-radius:8px; cursor:pointer;">
+          <div class="edit-actions">
+            <button class="cancel-btn" onclick="hideAnnivForm()">取消</button>
+            <button class="save-btn" onclick="saveAnniversary()">保存</button>
+          </div>
+        </div>
+
+        <h3 style="margin-top:20px; margin-bottom:12px;">🔥 聊天热力图</h3>
+        <div class="heatmap-container">
+          <div class="heatmap-header">
+            <span class="heatmap-month" id="heatmapMonthLabel">2024年6月</span>
+            <div class="heatmap-nav">
+              <button onclick="changeHeatmapMonth(-1)">◀</button>
+              <button onclick="changeHeatmapMonth(1)">▶</button>
+            </div>
+          </div>
+          <div class="heatmap-grid" id="heatmapGrid"></div>
+          <div style="margin-top:8px; font-size:11px; color:#999;">颜色深浅反映当日聊天条数（白色=0，深棕=1500+）</div>
+        </div>
+
+        <h3 style="margin-bottom:12px;">💰 累计费用</h3>
+        <div class="stats-box">
+          <div>API 单价：<span id="statsPrice">0.00</span> 元/次</div>
+          <div class="amount" id="statsCost">¥ 0.00</div>
+          <div style="font-size:12px; color:#999;">总调用次数：<span id="statsCalls">0</span></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 底部导航栏 -->
   <div class="bottom-nav">
     <span class="nav-item" onclick="switchPage('placeholder1')">🔲</span>
-    <span class="nav-item" onclick="switchPage('placeholder2')">🔲</span>
+    <span class="nav-item" onclick="switchPage('journal')">📝</span>
     <span class="nav-item chat-icon active" onclick="switchPage('chat')">💬</span>
     <span class="nav-item" onclick="switchPage('memory')">🧠</span>
     <span class="nav-item" onclick="switchPage('placeholder3')">🔲</span>
@@ -284,48 +411,47 @@
 
   <!-- 情侣头像管理 -->
   <div class="sub-page" id="coupleAvatarsPage">
-  <div class="sub-header"><button onclick="closeSubPage('coupleAvatarsPage')">← 返回</button><h3>情侣头像</h3></div>
-  <div class="sub-content">
-    <div id="coupleList"></div>
-    <button onclick="showAddCoupleForm()" id="showAddCoupleBtn">＋ 添加配对</button>
-
-    <!-- 新增的添加配对表单卡片 -->
-    <div class="memory-edit-card" id="coupleAddCard" style="margin-top:16px;">
-      <label>配对名称</label>
-      <input type="text" id="couplePairName" placeholder="例如：日常">
-      <div style="display:flex; gap:16px; margin-bottom:12px;">
-        <div style="flex:1; text-align:center;">
-          <label>AI 头像</label>
-          <div class="avatar-edit" style="justify-content:center;">
-            <div class="avatar-preview" id="aiAvatarPreview" style="width:60px; height:60px; border-radius:8px; background:#ddd;"></div>
+    <div class="sub-header"><button onclick="closeSubPage('coupleAvatarsPage')">← 返回</button><h3>情侣头像</h3></div>
+    <div class="sub-content">
+      <div id="coupleList"></div>
+      <button onclick="showAddCoupleForm()" id="showAddCoupleBtn">＋ 添加配对</button>
+      <div class="memory-edit-card" id="coupleAddCard" style="margin-top:16px;">
+        <label>配对名称</label>
+        <input type="text" id="couplePairName" placeholder="例如：日常">
+        <div style="display:flex; gap:16px; margin-bottom:12px;">
+          <div style="flex:1; text-align:center;">
+            <label>AI 头像</label>
+            <div class="avatar-edit" style="justify-content:center;">
+              <div class="avatar-preview" id="aiAvatarPreview" style="width:60px; height:60px; border-radius:8px; background:#ddd;"></div>
+            </div>
+            <button onclick="document.getElementById('aiAvatarInput').click()" style="margin-top:6px;">选择图片</button>
+            <input type="file" id="aiAvatarInput" accept="image/*" style="display:none;" onchange="previewAvatar('ai')">
           </div>
-          <button onclick="document.getElementById('aiAvatarInput').click()" style="margin-top:6px;">选择图片</button>
-          <input type="file" id="aiAvatarInput" accept="image/*" style="display:none;" onchange="previewAvatar('ai')">
-        </div>
-        <div style="flex:1; text-align:center;">
-          <label>我的头像</label>
-          <div class="avatar-edit" style="justify-content:center;">
-            <div class="avatar-preview" id="myAvatarPreview" style="width:60px; height:60px; border-radius:8px; background:#ddd;"></div>
+          <div style="flex:1; text-align:center;">
+            <label>我的头像</label>
+            <div class="avatar-edit" style="justify-content:center;">
+              <div class="avatar-preview" id="myAvatarPreview" style="width:60px; height:60px; border-radius:8px; background:#ddd;"></div>
+            </div>
+            <button onclick="document.getElementById('myAvatarInput').click()" style="margin-top:6px;">选择图片</button>
+            <input type="file" id="myAvatarInput" accept="image/*" style="display:none;" onchange="previewAvatar('my')">
           </div>
-          <button onclick="document.getElementById('myAvatarInput').click()" style="margin-top:6px;">选择图片</button>
-          <input type="file" id="myAvatarInput" accept="image/*" style="display:none;" onchange="previewAvatar('my')">
         </div>
-      </div>
-      <div class="edit-actions">
-        <button class="cancel-btn" onclick="hideAddCoupleForm()">取消</button>
-        <button class="save-btn" onclick="saveNewCouplePair()">保存</button>
+        <div class="edit-actions">
+          <button class="cancel-btn" onclick="hideAddCoupleForm()">取消</button>
+          <button class="save-btn" onclick="saveNewCouplePair()">保存</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-  <!-- API 配置 -->
+  <!-- API 配置（含单价） -->
   <div class="sub-page" id="apiConfigPage">
     <div class="sub-header"><button onclick="closeSubPage('apiConfigPage')">← 返回</button><h3>API 配置</h3></div>
     <div class="sub-content">
       <label>API 地址</label><input type="text" id="apiUrl">
       <label>API 密钥</label><input type="password" id="apiKey">
       <label>模型</label><input type="text" id="modelName">
+      <label>每次调用价格（元）</label><input type="number" id="apiPriceInput" step="0.0001" min="0" placeholder="例如 0.002">
       <button onclick="fetchModels()">提取模型列表</button>
       <select id="modelSelect" style="width:100%; padding:10px; margin-top:8px;"></select>
       <br><br>
@@ -373,7 +499,7 @@
   </div>
 
   <script>
-    // ========== 数据库与全局变量 ==========
+    // ========== 全局变量 ==========
     const DB_NAME = 'AiLoverDB';
     let db;
     let messages = [];
@@ -386,17 +512,22 @@
       model: 'gpt-3.5-turbo',
       contextRounds: 4,
       coupleAvatars: [],
-      memories: { core: [], important: [], daily: [] }
+      memories: { core: [], important: [], daily: [] },
+      anniversaries: [],
+      dailyMessageCounts: {},
+      totalMessageCount: 0,
+      apiPrice: 0
     };
 
     let currentMenuMsgIndex = null;
     let pendingQuote = null;
-    // 当前编辑的记忆索引（-1表示添加新记忆）
     let currentEditIndex = { core: -1, important: -1, daily: -1 };
+    let currentAnnivIndex = -1;
+    let heatmapYearMonth = new Date();
 
     function openDB() {
       return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 2);
+        const request = indexedDB.open(DB_NAME, 3);
         request.onupgradeneeded = (e) => {
           const db = e.target.result;
           if (!db.objectStoreNames.contains('messages')) db.createObjectStore('messages', { keyPath: 'id', autoIncrement: true });
@@ -424,13 +555,17 @@
     async function loadSettings() {
       const tx = db.transaction('settings', 'readonly');
       const store = tx.objectStore('settings');
-      const keys = ['roleName','roleInfo','roleAvatar','apiUrl','apiKey','model','contextRounds','coupleAvatars','memories'];
+      const keys = ['roleName','roleInfo','roleAvatar','apiUrl','apiKey','model','contextRounds','coupleAvatars','memories','anniversaries','dailyMessageCounts','totalMessageCount','apiPrice'];
       for (let k of keys) {
         const req = store.get(k);
         const result = await new Promise(resolve => { req.onsuccess = () => resolve(req.result); });
         if (result !== undefined) settings[k] = result.value;
       }
       if (!settings.memories) settings.memories = { core: [], important: [], daily: [] };
+      if (!settings.anniversaries) settings.anniversaries = [];
+      if (!settings.dailyMessageCounts) settings.dailyMessageCounts = {};
+      if (settings.totalMessageCount === undefined) settings.totalMessageCount = 0;
+      if (settings.apiPrice === undefined) settings.apiPrice = 0;
       updateHeaderTitle();
     }
 
@@ -448,6 +583,9 @@
       const now = new Date();
       return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${getTimeString()}`;
     }
+    function getDateString(date = new Date()) {
+      return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    }
 
     function updateHeaderTitle() {
       const titleEl = document.getElementById('headerTitle');
@@ -464,7 +602,22 @@
         document.getElementById('memoryPage').classList.add('active');
         document.querySelector('.nav-item:nth-child(4)').classList.add('active');
         renderAllMemories();
+      } else if (target === 'journal') {
+        document.getElementById('journalPage').classList.add('active');
+        document.querySelector('.nav-item:nth-child(2)').classList.add('active');
+        renderAnniversaries();
+        renderHeatmap();
+        updateStats();
       }
+    }
+
+    function incrementDailyCount() {
+      const today = getDateString();
+      if (!settings.dailyMessageCounts[today]) settings.dailyMessageCounts[today] = 0;
+      settings.dailyMessageCounts[today]++;
+      settings.totalMessageCount++;
+      saveSetting('dailyMessageCounts', settings.dailyMessageCounts);
+      saveSetting('totalMessageCount', settings.totalMessageCount);
     }
 
     // ========== 聊天渲染 ==========
@@ -540,17 +693,13 @@
       });
       container.scrollTop = container.scrollHeight;
     }
-        // ========== 发送消息与文件/图片 ==========
+
+    // ========== 发送消息 & AI ==========
     async function sendUserMessage() {
       const input = document.getElementById('msgInput');
       const text = input.value.trim();
       if (!text) return;
-      const msg = {
-        role: 'user',
-        type: 'text',
-        content: text,
-        timestamp: getTimeString()
-      };
+      const msg = { role: 'user', type: 'text', content: text, timestamp: getTimeString() };
       if (pendingQuote) {
         msg.quoted = pendingQuote;
         pendingQuote = null;
@@ -558,6 +707,7 @@
       }
       messages.push(msg);
       await saveMessage(msg);
+      incrementDailyCount();
       input.value = '';
       input.style.height = 'auto';
       renderChat();
@@ -581,6 +731,7 @@
           messages.push(msg);
           await saveMessage(msg);
         }
+        incrementDailyCount();
         renderChat();
       };
       input.click();
@@ -594,12 +745,13 @@
         const fake = { role: 'ai', type: 'text', content: '（请先配置 API）我也爱你~', timestamp: getTimeString() };
         messages.push(fake);
         await saveMessage(fake);
+        incrementDailyCount();
         renderChat();
         return;
       }
-      const aiPlaceholder = { role: 'ai', type: 'text', content: '正在输入…', timestamp: getTimeString() };
-      messages.push(aiPlaceholder);
-      await saveMessage(aiPlaceholder);
+      const placeholder = { role: 'ai', type: 'text', content: '正在输入…', timestamp: getTimeString() };
+      messages.push(placeholder);
+      await saveMessage(placeholder);
       renderChat();
       try {
         const replyContent = await callAI();
@@ -610,12 +762,14 @@
           messages.push(aiMsg);
           await saveMessage(aiMsg);
         }
+        incrementDailyCount();
         renderChat();
       } catch (e) {
         messages.pop();
         const errMsg = { role: 'ai', type: 'text', content: 'AI 回复失败: ' + e.message, timestamp: getTimeString() };
         messages.push(errMsg);
         await saveMessage(errMsg);
+        incrementDailyCount();
         renderChat();
       }
     }
@@ -628,18 +782,33 @@
       if (mem.important.length > 0) memoryContext += '重要事件: ' + mem.important.map(m => m.event).join('; ') + '\n';
       if (mem.daily.length > 0) memoryContext += '日常记忆: ' + mem.daily.map(m => m.event).join('; ') + '\n';
 
+      let annivContext = '';
+      if (settings.anniversaries.length > 0) {
+        annivContext = '纪念日:\n' + settings.anniversaries.map(a => {
+          const today = new Date();
+          const target = new Date(a.date + 'T00:00:00');
+          const diffTime = a.type === 'countup' ? (today - target) : (target - today);
+          let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays < 0) diffDays = 0;
+          let display = diffDays + '天';
+          if (a.unit === 'months') display = Math.floor(diffDays / 30) + '个月';
+          else if (a.unit === 'years') display = (diffDays / 365).toFixed(1) + '年';
+          return `${a.title}：${a.type === 'countup' ? '已经' : '还有'} ${display}（${a.date}）`;
+        }).join('\n');
+      }
+
+      const totalCost = (settings.totalMessageCount * settings.apiPrice).toFixed(4);
+      const statsContext = `历史总消息数：${settings.totalMessageCount}，累计费用：¥${totalCost}。`;
+
       const recentMessages = messages.slice(-(settings.contextRounds * 2));
       const apiMessages = [
-        { role: 'system', content: `你是${settings.roleName}，${settings.roleInfo}。${memoryContext ? '你记得以下信息：\n' + memoryContext : ''}如果对话产生了值得记忆的内容，请在回复末尾加上 ---MEMORY:类别:事件:感受---（类别：core/important/daily）。你可以用 --- 分段发送多条消息。如果生成了文件内容，请在回复末尾用 ---FILE:文件名:文件内容--- 发送纯文本文档，用户将收到该文档的下载。请用恋人的语气回复。` }
+        { role: 'system', content: `你是${settings.roleName}，${settings.roleInfo}。${memoryContext ? '记忆：\n' + memoryContext : ''}${annivContext ? annivContext + '\n' : ''}${statsContext}如果对话产生了值得记忆的内容，请在回复末尾加上 ---MEMORY:类别:事件:感受---（类别：core/important/daily）。你可以用 --- 分段发送多条消息。如果生成了文件内容，请在回复末尾用 ---FILE:文件名:文件内容--- 发送纯文本文档。请用恋人的语气回复。` }
       ];
       for (const m of recentMessages) {
         let content = m.content;
         if (m.type === 'image') content = '[用户发送了一张图片]';
         else if (m.type === 'file') content = `[用户发送了文件: ${m.fileName}]\n内容: ${m.content}`;
-        apiMessages.push({
-          role: m.role === 'ai' ? 'assistant' : 'user',
-          content: content
-        });
+        apiMessages.push({ role: m.role === 'ai' ? 'assistant' : 'user', content });
       }
 
       const response = await fetch(url, {
@@ -651,7 +820,6 @@
       const data = await response.json();
       let reply = data.choices[0].message.content;
 
-      // 提取记忆（新格式：类别:事件:感受）
       const memRegex = /---MEMORY:(\w+):(.+?):(.+?)---/g;
       let match;
       while ((match = memRegex.exec(reply)) !== null) {
@@ -687,18 +855,13 @@
       menu.style.display = 'flex';
       setTimeout(() => document.addEventListener('click', hideBubbleMenu, { once: true }), 100);
     }
-    function hideBubbleMenu() {
-      document.getElementById('bubbleMenu').style.display = 'none';
-    }
+    function hideBubbleMenu() { document.getElementById('bubbleMenu').style.display = 'none'; }
 
     function quoteMessage() {
       hideBubbleMenu();
       const msg = messages[currentMenuMsgIndex];
       if (!msg) return;
-      pendingQuote = {
-        id: msg.id,
-        content: msg.content.length > 50 ? msg.content.substring(0, 50) + '...' : msg.content
-      };
+      pendingQuote = { id: msg.id, content: msg.content.length > 50 ? msg.content.substring(0, 50) + '...' : msg.content };
       const input = document.getElementById('msgInput');
       input.placeholder = '引用回复...';
       input.focus();
@@ -729,12 +892,11 @@
       renderChat();
     }
 
-    // ========== 记忆功能（美化版） ==========
+    // ========== 记忆功能 ==========
     function showAddMemoryForm(category) {
       currentEditIndex[category] = -1;
       const card = document.getElementById(category + 'EditCard');
       card.classList.add('active');
-      // 清空输入框
       document.getElementById(category + 'EditTime').value = '';
       document.getElementById(category + 'EditEvent').value = '';
       document.getElementById(category + 'EditFeeling').value = '';
@@ -759,17 +921,12 @@
       const time = document.getElementById(category + 'EditTime').value.trim();
       const event = document.getElementById(category + 'EditEvent').value.trim();
       const feeling = document.getElementById(category + 'EditFeeling').value.trim();
-      if (!event && !feeling) {
-        alert('至少填写事件或感受');
-        return;
-      }
+      if (!event && !feeling) { alert('至少填写事件或感受'); return; }
       const finalTime = time || getFullTimeString();
       const newItem = { event, feeling, time: finalTime };
       if (currentEditIndex[category] >= 0) {
-        // 编辑
         settings.memories[category][currentEditIndex[category]] = newItem;
       } else {
-        // 新增
         settings.memories[category].push(newItem);
       }
       await saveSetting('memories', settings.memories);
@@ -791,32 +948,28 @@
     }
 
     function renderMemoryList(category, container) {
-  if (!container) return;
-  container.innerHTML = '';
-  const list = settings.memories[category] || [];
-  list.forEach((item, index) => {
-    const div = document.createElement('div');
-    div.className = 'memory-item';
-    div.style.flexDirection = 'column';
-    div.style.alignItems = 'flex-start';
-    div.innerHTML = `
-      <div style="font-size:11px; color:#999; margin-bottom:2px;">${item.time}</div>
-      <div style="font-size:14px; margin-bottom:2px;">${item.event || '(无内容)'}</div>
-      <div style="font-size:13px; color:#8a7b6e;">${item.feeling ? '💭 ' + item.feeling : ''}</div>
-      <div class="memory-actions" style="align-self: flex-end; margin-top: 4px;">
-        <button onclick="showEditMemoryForm('${category}', ${index})">✏️</button>
-        <button onclick="deleteMemory('${category}', ${index})">🗑️</button>
-      </div>`;
-    container.appendChild(div);
-  });
-}
-
-    // ========== 情侣头像管理 ==========
-    function openCoupleAvatarsPage() {
-      renderCoupleList();
-      openSubPage('coupleAvatarsPage');
+      if (!container) return;
+      container.innerHTML = '';
+      const list = settings.memories[category] || [];
+      list.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'memory-item';
+        div.style.flexDirection = 'column';
+        div.style.alignItems = 'flex-start';
+        div.innerHTML = `
+          <div style="font-size:11px; color:#999; margin-bottom:2px;">${item.time}</div>
+          <div style="font-size:14px; margin-bottom:2px;">${item.event || '(无内容)'}</div>
+          <div style="font-size:13px; color:#8a7b6e;">${item.feeling ? '💭 ' + item.feeling : ''}</div>
+          <div class="memory-actions" style="align-self: flex-end; margin-top: 4px;">
+            <button onclick="showEditMemoryForm('${category}', ${index})">✏️</button>
+            <button onclick="deleteMemory('${category}', ${index})">🗑️</button>
+          </div>`;
+        container.appendChild(div);
+      });
     }
 
+    // ========== 情侣头像 ==========
+    function openCoupleAvatarsPage() { renderCoupleList(); openSubPage('coupleAvatarsPage'); }
     function renderCoupleList() {
       const container = document.getElementById('coupleList');
       if (!container) return;
@@ -824,17 +977,13 @@
       settings.coupleAvatars.forEach((pair, index) => {
         const div = document.createElement('div');
         div.className = 'couple-pair';
-        div.innerHTML = `
-          <strong>${pair.name || '配对' + (index+1)}</strong>
-          <img src="${pair.my}" alt="我的头像">
-          <img src="${pair.ai}" alt="AI头像">
+        div.innerHTML = `<strong>${pair.name || '配对' + (index+1)}</strong>
+          <img src="${pair.my}" alt="我的头像"><img src="${pair.ai}" alt="AI头像">
           <button onclick="selectCouplePair(${index})">应用</button>
           <button onclick="deleteCouplePair(${index})">删除</button>`;
         container.appendChild(div);
       });
     }
-
-    // 显示添加表单
     function showAddCoupleForm() {
       document.getElementById('coupleAddCard').classList.add('active');
       document.getElementById('couplePairName').value = '';
@@ -843,26 +992,16 @@
       document.getElementById('aiAvatarPreview').style.backgroundImage = '';
       document.getElementById('myAvatarPreview').style.backgroundImage = '';
     }
-
-    // 隐藏添加表单
-    function hideAddCoupleForm() {
-      document.getElementById('coupleAddCard').classList.remove('active');
-    }
-
-    // 预览头像
+    function hideAddCoupleForm() { document.getElementById('coupleAddCard').classList.remove('active'); }
     function previewAvatar(type) {
       const input = document.getElementById(type + 'AvatarInput');
       const preview = document.getElementById(type + 'AvatarPreview');
       if (input.files && input.files[0]) {
-         const reader = new FileReader();
-         reader.onload = (e) => {
-           preview.style.backgroundImage = `url(${e.target.result})`;
-         };
-         reader.readAsDataURL(input.files[0]);
+        const reader = new FileReader();
+        reader.onload = (e) => { preview.style.backgroundImage = `url(${e.target.result})`; };
+        reader.readAsDataURL(input.files[0]);
       }
     }
-
-    // 保存配对
     async function saveNewCouplePair() {
       const name = document.getElementById('couplePairName').value.trim();
       if (!name) { alert('请输入配对名称'); return; }
@@ -876,6 +1015,27 @@
       hideAddCoupleForm();
       renderCoupleList();
     }
+    async function selectCouplePair(index) {
+      const pair = settings.coupleAvatars[index];
+      if (!pair) return;
+      settings.roleAvatar = pair.ai;
+      await saveSetting('roleAvatar', pair.ai);
+      renderChat();
+      alert('已应用情侣头像 ' + (pair.name || ''));
+    }
+    async function deleteCouplePair(index) {
+      settings.coupleAvatars.splice(index, 1);
+      await saveSetting('coupleAvatars', settings.coupleAvatars);
+      renderCoupleList();
+    }
+    async function selectCoupleAvatar() {
+      if (settings.coupleAvatars.length === 0) { alert('请先到设置-情侣头像中添加配对'); return; }
+      const names = settings.coupleAvatars.map(p => p.name || '未命名');
+      const choice = prompt('选择情侣头像配对:\n' + names.map((n, i) => `${i+1}. ${n}`).join('\n'));
+      if (!choice) return;
+      const idx = parseInt(choice) - 1;
+      if (idx >= 0 && idx < settings.coupleAvatars.length) await selectCouplePair(idx);
+    }
 
     // ========== 角色信息 ==========
     function openRoleInfo() {
@@ -884,7 +1044,6 @@
       updateRoleAvatarPreview();
       openSubPage('roleInfoPage');
     }
-
     async function saveRoleInfo() {
       settings.roleName = document.getElementById('roleName').value;
       settings.roleInfo = document.getElementById('roleExtraInfo').value;
@@ -893,12 +1052,10 @@
       updateHeaderTitle();
       closeSubPage('roleInfoPage');
     }
-
     function updateRoleAvatarPreview() {
       const preview = document.getElementById('roleAvatarPreview');
       if (settings.roleAvatar) preview.style.backgroundImage = `url(${settings.roleAvatar})`;
     }
-
     async function changeRoleAvatar() {
       const file = await selectImageFile();
       if (!file) return;
@@ -908,7 +1065,7 @@
       updateRoleAvatarPreview();
     }
 
-    // ========== 文件与工具 ==========
+    // 工具
     function selectImageFile() {
       return new Promise(resolve => {
         const input = document.createElement('input');
@@ -917,7 +1074,6 @@
         input.click();
       });
     }
-
     function fileToBase64(file) {
       return new Promise(resolve => {
         const reader = new FileReader();
@@ -925,7 +1081,6 @@
         reader.readAsDataURL(file);
       });
     }
-
     function formatSize(bytes) {
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
@@ -937,9 +1092,9 @@
       document.getElementById('apiUrl').value = settings.apiUrl;
       document.getElementById('apiKey').value = settings.apiKey;
       document.getElementById('modelName').value = settings.model;
+      document.getElementById('apiPriceInput').value = settings.apiPrice;
       openSubPage('apiConfigPage');
     }
-
     async function fetchModels() {
       const url = document.getElementById('apiUrl').value.replace(/\/+$/, '') + '/v1/models';
       const key = document.getElementById('apiKey').value;
@@ -955,25 +1110,25 @@
         alert('模型列表已加载');
       } catch (e) { alert('获取失败: ' + e.message); }
     }
-
     async function saveApiConfig() {
       settings.apiUrl = document.getElementById('apiUrl').value.trim();
       settings.apiKey = document.getElementById('apiKey').value.trim();
       const selected = document.getElementById('modelSelect').value;
       settings.model = selected || document.getElementById('modelName').value.trim();
+      settings.apiPrice = parseFloat(document.getElementById('apiPriceInput').value) || 0;
       await saveSetting('apiUrl', settings.apiUrl);
       await saveSetting('apiKey', settings.apiKey);
       await saveSetting('model', settings.model);
+      await saveSetting('apiPrice', settings.apiPrice);
       closeSubPage('apiConfigPage');
     }
 
-    // ========== 搜索、对话设置、数据管理 ==========
+    // 搜索等
     function openSearch() {
       document.getElementById('searchKeyword').value = '';
       document.getElementById('searchResults').innerHTML = '';
       openSubPage('searchPage');
     }
-
     function performSearch() {
       const keyword = document.getElementById('searchKeyword').value.trim().toLowerCase();
       const resultsDiv = document.getElementById('searchResults');
@@ -996,24 +1151,20 @@
         resultsDiv.appendChild(div);
       });
     }
-
     function openDialogSettings() {
       document.getElementById('contextRounds').value = settings.contextRounds;
       openSubPage('dialogSettingsPage');
     }
-
     async function saveDialogSettings() {
       settings.contextRounds = parseInt(document.getElementById('contextRounds').value) || 4;
       await saveSetting('contextRounds', settings.contextRounds);
       closeSubPage('dialogSettingsPage');
     }
-
     function openDataManage() {
       document.getElementById('importFile').value = '';
       document.getElementById('importStatus').textContent = '';
       openSubPage('dataManagePage');
     }
-
     async function exportData() {
       const tx = db.transaction('messages', 'readonly');
       const store = tx.objectStore('messages');
@@ -1031,7 +1182,6 @@
       URL.revokeObjectURL(url);
       alert('导出成功！');
     }
-
     async function importData() {
       const fileInput = document.getElementById('importFile');
       const statusDiv = document.getElementById('importStatus');
@@ -1049,9 +1199,7 @@
           tx.oncomplete = () => resolve();
           tx.onerror = (e) => reject(e);
         });
-        for (const [key, value] of Object.entries(data.settings)) {
-          await saveSetting(key, value);
-        }
+        for (const [key, value] of Object.entries(data.settings)) await saveSetting(key, value);
         const tx = db.transaction('messages', 'readwrite');
         const store = tx.objectStore('messages');
         for (const msg of data.messages) {
@@ -1070,13 +1218,126 @@
       }
     }
 
-    // ========== 设置页交互 ==========
+    // 纪念日
+    function showAddAnniversaryForm() {
+      currentAnnivIndex = -1;
+      document.getElementById('annivTitle').value = '';
+      document.getElementById('annivDate').value = '';
+      document.getElementById('annivType').value = 'countup';
+      document.getElementById('annivUnit').value = 'days';
+      document.getElementById('annivColor').value = '#b8a99a';
+      document.getElementById('annivEditCard').classList.add('active');
+    }
+    function showEditAnniversaryForm(index) {
+      currentAnnivIndex = index;
+      const a = settings.anniversaries[index];
+      document.getElementById('annivTitle').value = a.title;
+      document.getElementById('annivDate').value = a.date;
+      document.getElementById('annivType').value = a.type;
+      document.getElementById('annivUnit').value = a.unit || 'days';
+      document.getElementById('annivColor').value = a.color;
+      document.getElementById('annivEditCard').classList.add('active');
+    }
+    function hideAnnivForm() {
+      document.getElementById('annivEditCard').classList.remove('active');
+      currentAnnivIndex = -1;
+    }
+    async function saveAnniversary() {
+      const title = document.getElementById('annivTitle').value.trim();
+      const date = document.getElementById('annivDate').value;
+      const type = document.getElementById('annivType').value;
+      const unit = document.getElementById('annivUnit').value;
+      const color = document.getElementById('annivColor').value;
+      if (!title || !date) { alert('请填写标题和日期'); return; }
+      const newItem = { title, date, type, unit, color };
+      if (currentAnnivIndex >= 0) settings.anniversaries[currentAnnivIndex] = newItem;
+      else settings.anniversaries.push(newItem);
+      await saveSetting('anniversaries', settings.anniversaries);
+      hideAnnivForm();
+      renderAnniversaries();
+    }
+    async function deleteAnniversary(index) {
+      if (!confirm('删除这个纪念日吗？')) return;
+      settings.anniversaries.splice(index, 1);
+      await saveSetting('anniversaries', settings.anniversaries);
+      renderAnniversaries();
+    }
+    function renderAnniversaries() {
+      const grid = document.getElementById('annivGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      const today = new Date();
+      settings.anniversaries.forEach((a, index) => {
+        const target = new Date(a.date + 'T00:00:00');
+        const diffTime = a.type === 'countup' ? (today - target) : (target - today);
+        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays < 0) diffDays = 0;
+        let display = diffDays + '天';
+        if (a.unit === 'months') display = Math.floor(diffDays / 30) + '个月';
+        else if (a.unit === 'years') display = (diffDays / 365).toFixed(1) + '年';
+        const card = document.createElement('div');
+        card.className = 'anniv-card';
+        card.style.background = a.color;
+        card.innerHTML = `
+          <div class="title">${a.title}</div>
+          <div class="days">${display}</div>
+          <div class="subtitle">${a.date}</div>
+          <div style="position:absolute; top:4px; right:4px; font-size:12px; opacity:0.8;" onclick="event.stopPropagation(); showEditAnniversaryForm(${index})">✏️</div>`;
+        card.addEventListener('click', () => { if (confirm('编辑或删除这个纪念日？')) showEditAnniversaryForm(index); });
+        card.addEventListener('contextmenu', e => { e.preventDefault(); deleteAnniversary(index); });
+        grid.appendChild(card);
+      });
+    }
+
+    // 热力图
+    function renderHeatmap() {
+      const year = heatmapYearMonth.getFullYear();
+      const month = heatmapYearMonth.getMonth();
+      document.getElementById('heatmapMonthLabel').textContent = `${year}年${month+1}月`;
+      const grid = document.getElementById('heatmapGrid');
+      grid.innerHTML = '';
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month+1, 0).getDate();
+      for (let i = 0; i < firstDay; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-cell empty';
+        grid.appendChild(cell);
+      }
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const count = settings.dailyMessageCounts[dateStr] || 0;
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-cell';
+        cell.textContent = d;
+        let bucket = Math.min(Math.floor(count / 100), 15);
+        const r = Math.round(245 - (245-93) * bucket/15);
+        const g = Math.round(241 - (241-64) * bucket/15);
+        const b = Math.round(234 - (234-55) * bucket/15);
+        cell.style.background = `rgb(${r},${g},${b})`;
+        cell.style.color = bucket > 7 ? '#fff' : '#666';
+        grid.appendChild(cell);
+      }
+    }
+    function changeHeatmapMonth(delta) {
+      heatmapYearMonth.setMonth(heatmapYearMonth.getMonth() + delta);
+      renderHeatmap();
+    }
+
+    // 统计
+    function updateStats() {
+      document.getElementById('statsPrice').textContent = settings.apiPrice.toFixed(4);
+      document.getElementById('statsCalls').textContent = settings.totalMessageCount;
+      const cost = (settings.totalMessageCount * settings.apiPrice).toFixed(4);
+      document.getElementById('statsCost').textContent = '¥ ' + cost;
+    }
+
+    // 设置页交互
     function openSettings() { document.getElementById('settingsOverlay').classList.add('active'); }
     function closeSettings() { document.getElementById('settingsOverlay').classList.remove('active'); }
     function openSubPage(id) { document.getElementById(id).classList.add('active'); }
     function closeSubPage(id) { document.getElementById(id).classList.remove('active'); }
 
-    // ========== Service Worker ==========
+    // Service Worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/Palino-s-home/sw.js')
         .then(reg => {
@@ -1091,7 +1352,7 @@
         }).catch(err => console.log('SW 注册失败', err));
     }
 
-    // ========== 启动 ==========
+    // 启动
     (async function init() {
       await openDB();
       await loadSettings();
