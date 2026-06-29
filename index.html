@@ -63,6 +63,7 @@
       font-size: 15px;
       line-height: 1.4;
       box-shadow: 0 2px 2px rgba(184, 169, 154, 0.4);
+      white-space: pre-wrap;
     }
     .message-row.me .bubble { border-bottom-right-radius: 4px; }
     .message-row.ai .bubble { border-bottom-left-radius: 4px; }
@@ -70,17 +71,50 @@
     .timestamp { font-size: 11px; color: #9e8f7f; margin-top: 4px; text-align: right; }
     .me .timestamp { text-align: left; }
 
+    /* 图片消息 */
+    .image-bubble {
+      max-width: 75%;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 2px rgba(184, 169, 154, 0.4);
+      cursor: pointer;
+    }
+    .image-bubble img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* 文件消息 */
+    .file-bubble {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(215, 201, 184, 0.9);
+      padding: 10px;
+      border-radius: 12px;
+      box-shadow: 0 2px 2px rgba(184, 169, 154, 0.4);
+      cursor: pointer;
+    }
+    .file-bubble .file-icon { font-size: 28px; }
+    .file-bubble .file-info { display: flex; flex-direction: column; }
+    .file-bubble .file-name { font-size: 14px; font-weight: bold; }
+    .file-bubble .file-size { font-size: 12px; color: #666; }
+
     .input-area {
       background: #fff; padding: 8px 12px; display: flex; gap: 8px; border-top: 1px solid #e0d6cb;
     }
-    .input-area input {
+    .input-area textarea, .input-area input {
       flex: 1; padding: 10px 16px; border: none; border-radius: 24px; background: #F5F1EA; font-size: 15px; outline: none;
+      resize: none; max-height: 120px; overflow-y: auto;
     }
-    .send-btn, .ai-btn {
+    .attach-btn, .send-btn, .ai-btn {
       background: #b8a99a; border: none; color: white; font-size: 18px; padding: 0 16px; border-radius: 24px; cursor: pointer; white-space: nowrap;
     }
     .ai-btn { background: #c69c6d; }
+    .attach-btn { background: #8ab4a8; padding: 0 12px; }
 
+    /* 底部导航栏 */
     .bottom-nav {
       height: 56px;
       background: #fff;
@@ -101,6 +135,7 @@
     .nav-item.active { color: #b8a99a; }
     .nav-item.chat-icon { font-size: 28px; }
 
+    /* 设置页覆盖层 */
     .settings-overlay {
       position: fixed; top:0; left:0; width:100%; height:100%; background:#F5F1EA; z-index:10; display:none; flex-direction:column;
     }
@@ -148,6 +183,28 @@
     .memory-time { font-size: 12px; color: #999; margin-right: 8px; }
     .memory-actions { display: flex; gap: 6px; }
     .memory-actions button { background: none; border: none; cursor: pointer; font-size: 16px; }
+
+    /* 气泡菜单浮层 */
+    .bubble-menu {
+      position: fixed;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      display: none;
+      flex-direction: column;
+      z-index: 99;
+      overflow: hidden;
+    }
+    .bubble-menu button {
+      padding: 10px 16px;
+      border: none;
+      background: none;
+      font-size: 14px;
+      text-align: left;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .bubble-menu button:active { background: #f0ece6; }
   </style>
 </head>
 <body>
@@ -161,7 +218,8 @@
     <div class="page active" id="chatPage">
       <div class="chat-container" id="chatContainer"></div>
       <div class="input-area">
-        <input type="text" id="msgInput" placeholder="说点什么..." autofocus>
+        <button class="attach-btn" onclick="attachFile()">📎</button>
+        <textarea id="msgInput" placeholder="说点什么..." rows="1" autofocus></textarea>
         <button class="send-btn" onclick="sendUserMessage()" title="发送消息">📤</button>
         <button class="ai-btn" onclick="triggerAIReply()" title="让AI回复">✨</button>
       </div>
@@ -284,11 +342,18 @@
       <div id="importStatus" class="import-status"></div>
     </div>
   </div>
-    <script>
-    // ========== 数据库与数据管理 ==========
+
+  <!-- 气泡长按菜单 -->
+  <div class="bubble-menu" id="bubbleMenu">
+    <button onclick="quoteMessage()">💬 引用</button>
+    <button onclick="deleteMessage()">🗑️ 删除</button>
+  </div>
+
+  <script>
+    // ========== 数据库与全局变量 ==========
     const DB_NAME = 'AiLoverDB';
     let db;
-    let messages = [];
+    let messages = [];          // { id, role, type, content, timestamp, fileData? }
     let settings = {
       roleName: '小爱',
       roleInfo: '温柔体贴',
@@ -297,13 +362,11 @@
       apiKey: '',
       model: 'gpt-3.5-turbo',
       contextRounds: 4,
-      coupleAvatars: [],        // [{ name: '配对名', my: 'base64...', ai: 'base64...' }]
-      memories: {
-        core: [],               // [{ text, time }]
-        important: [],
-        daily: []
-      }
+      coupleAvatars: [],
+      memories: { core: [], important: [], daily: [] }
     };
+
+    let currentMenuMsgIndex = null; // 当前长按的消息索引
 
     function openDB() {
       return new Promise((resolve, reject) => {
@@ -312,10 +375,6 @@
           const db = e.target.result;
           if (!db.objectStoreNames.contains('messages')) db.createObjectStore('messages', { keyPath: 'id', autoIncrement: true });
           if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
-          if (!db.objectStoreNames.contains('memories')) {
-            const memStore = db.createObjectStore('memories', { keyPath: 'id', autoIncrement: true });
-            memStore.createIndex('category', 'category', { unique: false });
-          }
         };
         request.onsuccess = (e) => { db = e.target.result; resolve(db); };
         request.onerror = (e) => reject(e);
@@ -345,7 +404,6 @@
         const result = await new Promise(resolve => { req.onsuccess = () => resolve(req.result); });
         if (result !== undefined) settings[k] = result.value;
       }
-      // 确保 memories 结构完整
       if (!settings.memories) settings.memories = { core: [], important: [], daily: [] };
       updateHeaderTitle();
     }
@@ -356,7 +414,7 @@
       await store.put({ key, value });
     }
 
-    // ========== 辅助函数 ==========
+    // ========== 工具函数 ==========
     function getTimeString() {
       const now = new Date();
       return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -368,10 +426,7 @@
 
     function updateHeaderTitle() {
       const titleEl = document.getElementById('headerTitle');
-      if (titleEl) {
-        const name = settings.roleName || '小爱';
-        titleEl.textContent = '💞 ' + name;
-      }
+      if (titleEl) titleEl.textContent = '💞 ' + (settings.roleName || '小爱');
     }
 
     // ========== 页面切换与导航 ==========
@@ -385,8 +440,6 @@
         document.getElementById('memoryPage').classList.add('active');
         document.querySelector('.nav-item:nth-child(4)').classList.add('active');
         renderAllMemories();
-      } else {
-        // 占位图标：点击不动
       }
     }
 
@@ -394,7 +447,7 @@
     function renderChat() {
       const container = document.getElementById('chatContainer');
       container.innerHTML = '';
-      messages.forEach(msg => {
+      messages.forEach((msg, index) => {
         const row = document.createElement('div');
         row.className = `message-row ${msg.role === 'user' ? 'me' : 'ai'}`;
         // 头像
@@ -403,9 +456,8 @@
         const avatarSrc = msg.role === 'user'
           ? (settings.coupleAvatars.length > 0 ? settings.coupleAvatars[0]?.my : '')
           : (settings.roleAvatar || '');
-        if (avatarSrc) {
-          avatar.style.backgroundImage = `url(${avatarSrc})`;
-        } else {
+        if (avatarSrc) avatar.style.backgroundImage = `url(${avatarSrc})`;
+        else {
           avatar.style.background = msg.role === 'user' ? '#a0c4ff' : '#ffc6ff';
           avatar.style.display = 'flex';
           avatar.style.alignItems = 'center';
@@ -413,7 +465,6 @@
           avatar.style.fontSize = '20px';
           avatar.textContent = msg.role === 'user' ? '👤' : '🤖';
         }
-        // 长按更换情侣头像（用户头像）
         if (msg.role === 'user') {
           avatar.addEventListener('contextmenu', e => { e.preventDefault(); selectCoupleAvatar(); });
           avatar.addEventListener('touchstart', function(e) {
@@ -421,42 +472,110 @@
           });
           avatar.addEventListener('touchend', function(e) { clearTimeout(this.holdTimer); });
         }
-        // 气泡包装
-        const bubbleWrapper = document.createElement('div');
-        bubbleWrapper.style.display = 'flex';
-        bubbleWrapper.style.flexDirection = 'column';
-        bubbleWrapper.style.maxWidth = '75%';
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble';
-        bubble.textContent = msg.content;
+
+        // 气泡内容
+        let bubbleElement;
+        if (msg.type === 'image') {
+          bubbleElement = document.createElement('div');
+          bubbleElement.className = 'image-bubble';
+          const img = document.createElement('img');
+          img.src = msg.content;
+          img.onclick = () => window.open(msg.content, '_blank');
+          bubbleElement.appendChild(img);
+        } else if (msg.type === 'file') {
+          bubbleElement = document.createElement('div');
+          bubbleElement.className = 'file-bubble';
+          bubbleElement.innerHTML = `
+            <span class="file-icon">📄</span>
+            <div class="file-info">
+              <span class="file-name">${msg.fileName || '文件'}</span>
+              <span class="file-size">${msg.fileSize || ''}</span>
+            </div>`;
+          bubbleElement.onclick = () => {
+            const blob = new Blob([msg.content], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = msg.fileName || 'file';
+            a.click();
+            URL.revokeObjectURL(url);
+          };
+        } else {
+          bubbleElement = document.createElement('div');
+          bubbleElement.className = 'bubble';
+          bubbleElement.textContent = msg.content;
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = 'column';
+        wrapper.style.maxWidth = '75%';
+        wrapper.dataset.msgIndex = index;
+        wrapper.appendChild(bubbleElement);
         const time = document.createElement('div');
         time.className = 'timestamp';
         time.textContent = msg.timestamp || '';
-        bubbleWrapper.appendChild(bubble);
-        bubbleWrapper.appendChild(time);
-        // 组合
+        wrapper.appendChild(time);
+
         if (msg.role === 'user') {
-          row.appendChild(bubbleWrapper);
+          row.appendChild(wrapper);
           row.appendChild(avatar);
         } else {
           row.appendChild(avatar);
-          row.appendChild(bubbleWrapper);
+          row.appendChild(wrapper);
         }
+
+        // 长按事件
+        wrapper.addEventListener('contextmenu', e => {
+          e.preventDefault();
+          showBubbleMenu(index, e.pageX, e.pageY);
+        });
+        wrapper.addEventListener('touchstart', function(e) {
+          this.holdTimer = setTimeout(() => {
+            showBubbleMenu(index, e.touches[0].pageX, e.touches[0].pageY);
+          }, 600);
+        });
+        wrapper.addEventListener('touchend', function(e) { clearTimeout(this.holdTimer); });
+        wrapper.addEventListener('touchmove', function(e) { clearTimeout(this.holdTimer); });
+
         container.appendChild(row);
       });
       container.scrollTop = container.scrollHeight;
     }
-
-    // ========== 发送消息与 AI 回复 ==========
+        // ========== 发送消息与文件/图片 ==========
     async function sendUserMessage() {
       const input = document.getElementById('msgInput');
       const text = input.value.trim();
       if (!text) return;
-      const msg = { role: 'user', content: text, timestamp: getTimeString() };
+      const msg = { role: 'user', type: 'text', content: text, timestamp: getTimeString() };
       messages.push(msg);
       await saveMessage(msg);
       input.value = '';
+      input.style.height = 'auto';
       renderChat();
+    }
+
+    async function attachFile() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,.txt,.doc,.docx,.pdf';
+      input.onchange = async () => {
+        const file = input.files[0];
+        if (!file) return;
+        if (file.type.startsWith('image/')) {
+          const base64 = await fileToBase64(file);
+          const msg = { role: 'user', type: 'image', content: base64, timestamp: getTimeString(), fileName: file.name, fileSize: formatSize(file.size) };
+          messages.push(msg);
+          await saveMessage(msg);
+        } else {
+          const text = await file.text();
+          const msg = { role: 'user', type: 'file', content: text, timestamp: getTimeString(), fileName: file.name, fileSize: formatSize(file.size) };
+          messages.push(msg);
+          await saveMessage(msg);
+        }
+        renderChat();
+      };
+      input.click();
     }
 
     async function triggerAIReply() {
@@ -464,26 +583,30 @@
       const lastMsg = messages[messages.length-1];
       if (lastMsg.role === 'ai') return;
       if (!settings.apiUrl || !settings.apiKey) {
-        const fake = { role: 'ai', content: '（请先配置 API）我也爱你~', timestamp: getTimeString() };
+        const fake = { role: 'ai', type: 'text', content: '（请先配置 API）我也爱你~', timestamp: getTimeString() };
         messages.push(fake);
         await saveMessage(fake);
         renderChat();
         return;
       }
-      const aiPlaceholder = { role: 'ai', content: '正在输入…', timestamp: getTimeString() };
+      const aiPlaceholder = { role: 'ai', type: 'text', content: '正在输入…', timestamp: getTimeString() };
       messages.push(aiPlaceholder);
       await saveMessage(aiPlaceholder);
       renderChat();
       try {
         const replyContent = await callAI();
         messages.pop();
-        const realReply = { role: 'ai', content: replyContent, timestamp: getTimeString() };
-        messages.push(realReply);
-        await saveMessage(realReply);
+        // 支持AI用 --- 分段发送多条消息
+        const segments = replyContent.split(/\n?---\n?/).filter(s => s.trim() !== '');
+        for (const seg of segments) {
+          const aiMsg = { role: 'ai', type: 'text', content: seg.trim(), timestamp: getTimeString() };
+          messages.push(aiMsg);
+          await saveMessage(aiMsg);
+        }
         renderChat();
       } catch (e) {
         messages.pop();
-        const errMsg = { role: 'ai', content: 'AI 回复失败: ' + e.message, timestamp: getTimeString() };
+        const errMsg = { role: 'ai', type: 'text', content: 'AI 回复失败: ' + e.message, timestamp: getTimeString() };
         messages.push(errMsg);
         await saveMessage(errMsg);
         renderChat();
@@ -492,19 +615,27 @@
 
     async function callAI() {
       const url = settings.apiUrl.replace(/\/+$/, '') + '/v1/chat/completions';
-      // 构建 system prompt，包含记忆
       let memoryContext = '';
       const mem = settings.memories;
       if (mem.core.length > 0) memoryContext += '核心记忆: ' + mem.core.map(m => m.text).join('; ') + '\n';
       if (mem.important.length > 0) memoryContext += '重要事件: ' + mem.important.map(m => m.text).join('; ') + '\n';
       if (mem.daily.length > 0) memoryContext += '日常记忆: ' + mem.daily.map(m => m.text).join('; ') + '\n';
-      const systemPrompt = `你是${settings.roleName}，${settings.roleInfo}。${memoryContext ? '你记得以下信息：\n' + memoryContext : ''}如果本次对话产生了值得记忆的内容，请在回复末尾加上 ---MEMORY:类别:内容---，类别只能是core、important或daily。请用恋人的语气回复。`;
-      const rounds = settings.contextRounds || 4;
-      const recentMessages = messages.slice(-(rounds * 2));
+
+      // 构建消息历史（包含文件/图片的文本描述）
+      const recentMessages = messages.slice(-(settings.contextRounds * 2));
       const apiMessages = [
-        { role: 'system', content: systemPrompt },
-        ...recentMessages.map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.content }))
+        { role: 'system', content: `你是${settings.roleName}，${settings.roleInfo}。${memoryContext ? '你记得以下信息：\n' + memoryContext : ''}如果对话产生了值得记忆的内容，请在回复末尾加上 ---MEMORY:类别:内容---（类别：core/important/daily）。你可以用 --- 分段发送多条消息。如果生成了文件内容，请在回复末尾用 ---FILE:文件名:文件内容--- 发送纯文本文档，用户将收到该文档的下载。请用恋人的语气回复。` }
       ];
+      for (const m of recentMessages) {
+        let content = m.content;
+        if (m.type === 'image') content = '[用户发送了一张图片]';
+        else if (m.type === 'file') content = `[用户发送了文件: ${m.fileName}]\n内容: ${m.content}`;
+        apiMessages.push({
+          role: m.role === 'ai' ? 'assistant' : 'user',
+          content: content
+        });
+      }
+
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
@@ -513,6 +644,7 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       let reply = data.choices[0].message.content;
+
       // 提取记忆
       const memRegex = /---MEMORY:(\w+):(.+?)---/g;
       let match;
@@ -524,8 +656,57 @@
         }
       }
       reply = reply.replace(/---MEMORY:\w+:.+?---/g, '').trim();
+
+      // 提取文件（AI 发送的文件）
+      const fileRegex = /---FILE:(.+?):([\s\S]*?)---/g;
+      while ((match = fileRegex.exec(reply)) !== null) {
+        const fileName = match[1].trim();
+        const fileContent = match[2].trim();
+        // 把文件作为一条 AI 消息插入（用 type: 'file'）
+        const fileMsg = { role: 'ai', type: 'file', content: fileContent, timestamp: getTimeString(), fileName, fileSize: formatSize(new Blob([fileContent]).size) };
+        messages.push(fileMsg);
+        await saveMessage(fileMsg);
+      }
+      reply = reply.replace(/---FILE:.+?:[\s\S]*?---/g, '').trim();
+
       await saveSetting('memories', settings.memories);
       return reply;
+    }
+
+    // ========== 气泡菜单 ==========
+    function showBubbleMenu(index, x, y) {
+      currentMenuMsgIndex = index;
+      const menu = document.getElementById('bubbleMenu');
+      menu.style.left = x + 'px';
+      menu.style.top = y + 'px';
+      menu.style.display = 'flex';
+      setTimeout(() => document.addEventListener('click', hideBubbleMenu, { once: true }), 100);
+    }
+    function hideBubbleMenu() {
+      document.getElementById('bubbleMenu').style.display = 'none';
+    }
+
+    function quoteMessage() {
+      hideBubbleMenu();
+      const msg = messages[currentMenuMsgIndex];
+      if (!msg) return;
+      const input = document.getElementById('msgInput');
+      input.value = `> ${msg.content}\n${input.value}`;
+      input.focus();
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    }
+
+    async function deleteMessage() {
+      hideBubbleMenu();
+      if (!confirm('删除这条及之后的所有消息？')) return;
+      const toDelete = messages.splice(currentMenuMsgIndex);
+      const tx = db.transaction('messages', 'readwrite');
+      const store = tx.objectStore('messages');
+      for (const m of toDelete) {
+        if (m.id !== undefined) await store.delete(m.id);
+      }
+      await tx.done;
+      renderChat();
     }
 
     // ========== 记忆功能 ==========
@@ -548,8 +729,7 @@
           <div class="memory-actions">
             <button onclick="editMemory('${category}', ${index})">✏️</button>
             <button onclick="deleteMemory('${category}', ${index})">🗑️</button>
-          </div>
-        `;
+          </div>`;
         container.appendChild(div);
       });
     }
@@ -565,11 +745,9 @@
     async function editMemory(category, index) {
       const item = settings.memories[category][index];
       const newText = prompt('编辑记忆内容:', item.text);
-      if (newText === null) return; // 取消文本编辑
+      if (newText === null) return;
       const newTime = prompt('编辑时间 (格式: 2024-03-15 14:30):', item.time);
-      if (newTime !== null && newTime.trim() !== '') {
-        item.time = newTime.trim();
-      }
+      if (newTime !== null && newTime.trim() !== '') item.time = newTime.trim();
       item.text = newText;
       await saveSetting('memories', settings.memories);
       renderAllMemories();
@@ -600,8 +778,7 @@
           <img src="${pair.my}" alt="我的头像">
           <img src="${pair.ai}" alt="AI头像">
           <button onclick="selectCouplePair(${index})">应用</button>
-          <button onclick="deleteCouplePair(${index})">删除</button>
-        `;
+          <button onclick="deleteCouplePair(${index})">删除</button>`;
         container.appendChild(div);
       });
     }
@@ -623,9 +800,8 @@
     async function selectCouplePair(index) {
       const pair = settings.coupleAvatars[index];
       if (!pair) return;
-      settings.roleAvatar = pair.ai; // 更新 AI 头像
+      settings.roleAvatar = pair.ai;
       await saveSetting('roleAvatar', pair.ai);
-      // 刷新聊天界面头像
       renderChat();
       alert('已应用情侣头像 ' + (pair.name || ''));
     }
@@ -645,9 +821,7 @@
       const choice = prompt('选择情侣头像配对:\n' + names.map((n, i) => `${i+1}. ${n}`).join('\n'));
       if (!choice) return;
       const idx = parseInt(choice) - 1;
-      if (idx >= 0 && idx < settings.coupleAvatars.length) {
-        await selectCouplePair(idx);
-      }
+      if (idx >= 0 && idx < settings.coupleAvatars.length) await selectCouplePair(idx);
     }
 
     // ========== 角色信息 ==========
@@ -681,7 +855,7 @@
       updateRoleAvatarPreview();
     }
 
-    // ========== 文件选择与Base64 ==========
+    // ========== 文件与工具 ==========
     function selectImageFile() {
       return new Promise(resolve => {
         const input = document.createElement('input');
@@ -690,12 +864,19 @@
         input.click();
       });
     }
+
     function fileToBase64(file) {
       return new Promise(resolve => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.readAsDataURL(file);
       });
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
     }
 
     // ========== API 配置 ==========
@@ -705,6 +886,7 @@
       document.getElementById('modelName').value = settings.model;
       openSubPage('apiConfigPage');
     }
+
     async function fetchModels() {
       const url = document.getElementById('apiUrl').value.replace(/\/+$/, '') + '/v1/models';
       const key = document.getElementById('apiKey').value;
@@ -720,6 +902,7 @@
         alert('模型列表已加载');
       } catch (e) { alert('获取失败: ' + e.message); }
     }
+
     async function saveApiConfig() {
       settings.apiUrl = document.getElementById('apiUrl').value.trim();
       settings.apiKey = document.getElementById('apiKey').value.trim();
@@ -737,16 +920,17 @@
       document.getElementById('searchResults').innerHTML = '';
       openSubPage('searchPage');
     }
+
     function performSearch() {
       const keyword = document.getElementById('searchKeyword').value.trim().toLowerCase();
       const resultsDiv = document.getElementById('searchResults');
       resultsDiv.innerHTML = '';
       if (!keyword) return;
-      const matches = messages.filter(m => m.content.toLowerCase().includes(keyword));
+      const matches = messages.filter(m => m.content && m.content.toLowerCase().includes(keyword));
       matches.forEach(m => {
         const div = document.createElement('div');
         div.className = 'search-result';
-        const snippet = m.content.substring(0, 50) + (m.content.length > 50 ? '...' : '');
+        const snippet = (m.content || '').substring(0, 50) + ((m.content || '').length > 50 ? '...' : '');
         div.textContent = `[${m.role === 'user' ? '我' : settings.roleName}] ${snippet}`;
         div.onclick = () => {
           closeSubPage('searchPage');
@@ -764,6 +948,7 @@
       document.getElementById('contextRounds').value = settings.contextRounds;
       openSubPage('dialogSettingsPage');
     }
+
     async function saveDialogSettings() {
       settings.contextRounds = parseInt(document.getElementById('contextRounds').value) || 4;
       await saveSetting('contextRounds', settings.contextRounds);
@@ -780,8 +965,7 @@
       const tx = db.transaction('messages', 'readonly');
       const store = tx.objectStore('messages');
       const allMessages = await new Promise(resolve => { const req = store.getAll(); req.onsuccess = () => resolve(req.result); });
-      const allSettings = { ...settings };
-      const exportObj = { version: 2, exportedAt: new Date().toISOString(), messages: allMessages, settings: allSettings };
+      const exportObj = { version: 2, exportedAt: new Date().toISOString(), messages: allMessages, settings: settings };
       const jsonStr = JSON.stringify(exportObj, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -860,6 +1044,11 @@
       await loadSettings();
       await loadMessages();
       renderChat();
+      const msgInput = document.getElementById('msgInput');
+      msgInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+      });
     })();
   </script>
 </body>
