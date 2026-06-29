@@ -284,12 +284,40 @@
 
   <!-- 情侣头像管理 -->
   <div class="sub-page" id="coupleAvatarsPage">
-    <div class="sub-header"><button onclick="closeSubPage('coupleAvatarsPage')">← 返回</button><h3>情侣头像</h3></div>
-    <div class="sub-content">
-      <div id="coupleList"></div>
-      <button onclick="addCouplePair()">＋ 添加配对</button>
+  <div class="sub-header"><button onclick="closeSubPage('coupleAvatarsPage')">← 返回</button><h3>情侣头像</h3></div>
+  <div class="sub-content">
+    <div id="coupleList"></div>
+    <button onclick="showAddCoupleForm()" id="showAddCoupleBtn">＋ 添加配对</button>
+
+    <!-- 新增的添加配对表单卡片 -->
+    <div class="memory-edit-card" id="coupleAddCard" style="margin-top:16px;">
+      <label>配对名称</label>
+      <input type="text" id="couplePairName" placeholder="例如：日常">
+      <div style="display:flex; gap:16px; margin-bottom:12px;">
+        <div style="flex:1; text-align:center;">
+          <label>AI 头像</label>
+          <div class="avatar-edit" style="justify-content:center;">
+            <div class="avatar-preview" id="aiAvatarPreview" style="width:60px; height:60px; border-radius:8px; background:#ddd;"></div>
+          </div>
+          <button onclick="document.getElementById('aiAvatarInput').click()" style="margin-top:6px;">选择图片</button>
+          <input type="file" id="aiAvatarInput" accept="image/*" style="display:none;" onchange="previewAvatar('ai')">
+        </div>
+        <div style="flex:1; text-align:center;">
+          <label>我的头像</label>
+          <div class="avatar-edit" style="justify-content:center;">
+            <div class="avatar-preview" id="myAvatarPreview" style="width:60px; height:60px; border-radius:8px; background:#ddd;"></div>
+          </div>
+          <button onclick="document.getElementById('myAvatarInput').click()" style="margin-top:6px;">选择图片</button>
+          <input type="file" id="myAvatarInput" accept="image/*" style="display:none;" onchange="previewAvatar('my')">
+        </div>
+      </div>
+      <div class="edit-actions">
+        <button class="cancel-btn" onclick="hideAddCoupleForm()">取消</button>
+        <button class="save-btn" onclick="saveNewCouplePair()">保存</button>
+      </div>
     </div>
   </div>
+</div>
 
   <!-- API 配置 -->
   <div class="sub-page" id="apiConfigPage">
@@ -806,45 +834,47 @@
       });
     }
 
-    async function addCouplePair() {
-      const name = prompt('输入配对名称:');
-      if (!name) return;
-      const myFile = await selectImageFile();
-      if (!myFile) return;
-      const aiFile = await selectImageFile();
-      if (!aiFile) return;
-      const myBase64 = await fileToBase64(myFile);
+    // 显示添加表单
+    function showAddCoupleForm() {
+      document.getElementById('coupleAddCard').classList.add('active');
+      document.getElementById('couplePairName').value = '';
+      document.getElementById('aiAvatarInput').value = '';
+      document.getElementById('myAvatarInput').value = '';
+      document.getElementById('aiAvatarPreview').style.backgroundImage = '';
+      document.getElementById('myAvatarPreview').style.backgroundImage = '';
+    }
+
+    // 隐藏添加表单
+    function hideAddCoupleForm() {
+      document.getElementById('coupleAddCard').classList.remove('active');
+    }
+
+    // 预览头像
+    function previewAvatar(type) {
+      const input = document.getElementById(type + 'AvatarInput');
+      const preview = document.getElementById(type + 'AvatarPreview');
+      if (input.files && input.files[0]) {
+         const reader = new FileReader();
+         reader.onload = (e) => {
+           preview.style.backgroundImage = `url(${e.target.result})`;
+         };
+         reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    // 保存配对
+    async function saveNewCouplePair() {
+      const name = document.getElementById('couplePairName').value.trim();
+      if (!name) { alert('请输入配对名称'); return; }
+      const aiFile = document.getElementById('aiAvatarInput').files[0];
+      const myFile = document.getElementById('myAvatarInput').files[0];
+      if (!aiFile || !myFile) { alert('请选择两张头像'); return; }
       const aiBase64 = await fileToBase64(aiFile);
+      const myBase64 = await fileToBase64(myFile);
       settings.coupleAvatars.push({ name, my: myBase64, ai: aiBase64 });
       await saveSetting('coupleAvatars', settings.coupleAvatars);
+      hideAddCoupleForm();
       renderCoupleList();
-    }
-
-    async function selectCouplePair(index) {
-      const pair = settings.coupleAvatars[index];
-      if (!pair) return;
-      settings.roleAvatar = pair.ai;
-      await saveSetting('roleAvatar', pair.ai);
-      renderChat();
-      alert('已应用情侣头像 ' + (pair.name || ''));
-    }
-
-    async function deleteCouplePair(index) {
-      settings.coupleAvatars.splice(index, 1);
-      await saveSetting('coupleAvatars', settings.coupleAvatars);
-      renderCoupleList();
-    }
-
-    async function selectCoupleAvatar() {
-      if (settings.coupleAvatars.length === 0) {
-        alert('请先到设置-情侣头像中添加配对');
-        return;
-      }
-      const names = settings.coupleAvatars.map(p => p.name || '未命名');
-      const choice = prompt('选择情侣头像配对:\n' + names.map((n, i) => `${i+1}. ${n}`).join('\n'));
-      if (!choice) return;
-      const idx = parseInt(choice) - 1;
-      if (idx >= 0 && idx < settings.coupleAvatars.length) await selectCouplePair(idx);
     }
 
     // ========== 角色信息 ==========
