@@ -562,105 +562,126 @@
       container.innerHTML = '';
       let thinkContent = null;
       messages.forEach((msg, index) => {
-        if (msg.role === 'ai' && msg.content.includes('<think>')) {
-          const match = msg.content.match(/<think>([\s\S]*?)<\/think>/);
-          if (match) {
-            thinkContent = match[1].trim();
-            msg.content = msg.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+       if (msg.role === 'ai' && msg.content.includes('<think>')) {
+         const match = msg.content.match(/<think>([\s\S]*?)<\/think>/);
+         if (match) {
+           thinkContent = match[1].trim();
+           msg.content = msg.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
           }
         }
 
-        const row = document.createElement('div');
-        row.className = `message-row ${msg.role === 'user' ? 'me' : 'ai'}`;
-        if (selectMode) row.classList.add('selectable');
-        if (selectedMessageIndices.has(index)) row.classList.add('selected');
-        row.dataset.msgIndex = index;
-
-        const avatar = document.createElement('div');
-        avatar.className = 'avatar';
-        const avatarSrc = msg.role === 'user' ? (settings.coupleAvatars.length > 0 ? settings.coupleAvatars[0]?.my : '') : (settings.roleAvatar || '');
-        if (avatarSrc) avatar.style.backgroundImage = `url(${avatarSrc})`;
-        else {
-          avatar.style.background = msg.role === 'user' ? '#a0c4ff' : '#ffc6ff';
-          avatar.style.display = 'flex'; avatar.style.alignItems = 'center'; avatar.style.justifyContent = 'center';
-          avatar.style.fontSize = '20px'; avatar.textContent = msg.role === 'user' ? '👤' : '🤖';
-        }
-
-        if (msg.role === 'ai' && thinkContent !== null) {
-          const thinkDiv = document.createElement('div');
-          thinkDiv.className = 'think-header';
-          thinkDiv.textContent = '💭 Palino的心里话';
-          const thinkBody = document.createElement('div');
-          thinkBody.className = 'think-content';
-          thinkBody.textContent = thinkContent;
-          thinkDiv.onclick = () => thinkBody.classList.toggle('open');
-          container.appendChild(thinkDiv);
-          container.appendChild(thinkBody);
-          thinkContent = null;
-        }
-
-        let bubbleElement;
-        if (msg.type === 'image') {
-          bubbleElement = document.createElement('div'); bubbleElement.className = 'image-bubble';
-          const img = document.createElement('img'); img.src = msg.content; img.onclick = () => window.open(msg.content, '_blank');
-          bubbleElement.appendChild(img);
-        } else if (msg.type === 'file') {
-          bubbleElement = document.createElement('div'); bubbleElement.className = 'file-bubble';
-          bubbleElement.innerHTML = `<span class="file-icon">📄</span><div class="file-info"><span class="file-name">${msg.fileName || '文件'}</span><span class="file-size">${msg.fileSize || ''}</span></div>`;
-          bubbleElement.onclick = () => {
-            const blob = new Blob([msg.content], { type: 'application/octet-stream' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = msg.fileName || 'file'; a.click(); URL.revokeObjectURL(url);
-          };
-        } else {
-          bubbleElement = document.createElement('div'); bubbleElement.className = 'bubble'; bubbleElement.textContent = msg.content;
-        }
-
-        const wrapper = document.createElement('div');
-        wrapper.style.display = 'flex'; wrapper.style.flexDirection = 'column'; wrapper.style.maxWidth = '75%';
-        wrapper.appendChild(bubbleElement);
-
-        if (msg.quoted) {
-          const quoteDiv = document.createElement('div');
-          quoteDiv.className = 'quote-bubble';
-          quoteDiv.textContent = msg.quoted.content;
-          wrapper.appendChild(quoteDiv);
-        }
-
-        const time = document.createElement('div');
-        time.className = 'timestamp'; time.textContent = msg.timestamp || '';
-        wrapper.appendChild(time);
-
-        if (msg.role === 'user') { row.appendChild(wrapper); row.appendChild(avatar); }
-        else { row.appendChild(avatar); row.appendChild(wrapper); }
-
-        row.addEventListener('click', (e) => {
-          if (selectMode) {
-            e.preventDefault();
-            toggleSelectMessage(index);
-          }
-        });
-        row.addEventListener('dblclick', (e) => {
-          if (!selectMode) {
-            e.preventDefault();
-            setQuoteFromMessage(index);
-          }
-        });
-        row.addEventListener('contextmenu', e => {
-          e.preventDefault();
-          if (!selectMode) showBubbleMenu(index, e.pageX, e.pageY);
-        });
-        row.addEventListener('touchstart', function(e) {
-          if (selectMode) return;
-          this.holdTimer = setTimeout(() => showBubbleMenu(index, e.touches[0].pageX, e.touches[0].pageY), 600);
-        });
-        row.addEventListener('touchend', function(e) { clearTimeout(this.holdTimer); });
-        row.addEventListener('touchmove', function(e) { clearTimeout(this.holdTimer); });
-
-        container.appendChild(row);
-      });
-      container.scrollTop = container.scrollHeight;
+    // ---------- 处理 AI 消息中的引用格式 > ----------
+    let displayContent = msg.content;
+    let quoted = msg.quoted;
+    if (msg.role === 'ai' && !quoted && displayContent) {
+      const lines = displayContent.split('\n');
+      let quoteLines = [];
+      let i = 0;
+      while (i < lines.length && lines[i].startsWith('> ')) {
+        quoteLines.push(lines[i].slice(2)); // 去掉 '> '
+        i++;
+      }
+      if (quoteLines.length > 0) {
+        const quoteText = quoteLines.join('\n');
+        quoted = { content: quoteText.length > 50 ? quoteText.substring(0, 50) + '...' : quoteText };
+        displayContent = lines.slice(i).join('\n').trim();
+      }
     }
+    // -----------------------------------------
+
+    const row = document.createElement('div');
+    row.className = `message-row ${msg.role === 'user' ? 'me' : 'ai'}`;
+    if (selectMode) row.classList.add('selectable');
+    if (selectedMessageIndices.has(index)) row.classList.add('selected');
+    row.dataset.msgIndex = index;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    const avatarSrc = msg.role === 'user' ? (settings.coupleAvatars.length > 0 ? settings.coupleAvatars[0]?.my : '') : (settings.roleAvatar || '');
+    if (avatarSrc) avatar.style.backgroundImage = `url(${avatarSrc})`;
+    else {
+      avatar.style.background = msg.role === 'user' ? '#a0c4ff' : '#ffc6ff';
+      avatar.style.display = 'flex'; avatar.style.alignItems = 'center'; avatar.style.justifyContent = 'center';
+      avatar.style.fontSize = '20px'; avatar.textContent = msg.role === 'user' ? '👤' : '🤖';
+    }
+
+    if (msg.role === 'ai' && thinkContent !== null) {
+      const thinkDiv = document.createElement('div');
+      thinkDiv.className = 'think-header';
+      thinkDiv.textContent = '💭 Palino的心里话';
+      const thinkBody = document.createElement('div');
+      thinkBody.className = 'think-content';
+      thinkBody.textContent = thinkContent;
+      thinkDiv.onclick = () => thinkBody.classList.toggle('open');
+      container.appendChild(thinkDiv);
+      container.appendChild(thinkBody);
+      thinkContent = null;
+    }
+
+    let bubbleElement;
+    if (msg.type === 'image') {
+      bubbleElement = document.createElement('div'); bubbleElement.className = 'image-bubble';
+      const img = document.createElement('img'); img.src = displayContent; img.onclick = () => window.open(displayContent, '_blank');
+      bubbleElement.appendChild(img);
+    } else if (msg.type === 'file') {
+      bubbleElement = document.createElement('div'); bubbleElement.className = 'file-bubble';
+      bubbleElement.innerHTML = `<span class="file-icon">📄</span><div class="file-info"><span class="file-name">${msg.fileName || '文件'}</span><span class="file-size">${msg.fileSize || ''}</span></div>`;
+      bubbleElement.onclick = () => {
+        const blob = new Blob([displayContent], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = msg.fileName || 'file'; a.click(); URL.revokeObjectURL(url);
+      };
+    } else {
+      bubbleElement = document.createElement('div'); bubbleElement.className = 'bubble'; bubbleElement.textContent = displayContent;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex'; wrapper.style.flexDirection = 'column'; wrapper.style.maxWidth = '75%';
+    wrapper.appendChild(bubbleElement);
+
+    // 显示引用气泡（用户或AI均支持）
+    if (quoted) {
+      const quoteDiv = document.createElement('div');
+      quoteDiv.className = 'quote-bubble';
+      quoteDiv.textContent = quoted.content;
+      wrapper.appendChild(quoteDiv);
+    }
+
+    const time = document.createElement('div');
+    time.className = 'timestamp'; time.textContent = msg.timestamp || '';
+    wrapper.appendChild(time);
+
+    if (msg.role === 'user') { row.appendChild(wrapper); row.appendChild(avatar); }
+    else { row.appendChild(avatar); row.appendChild(wrapper); }
+
+    // 事件绑定保持不变
+    row.addEventListener('click', (e) => {
+      if (selectMode) {
+        e.preventDefault();
+        toggleSelectMessage(index);
+      }
+    });
+    row.addEventListener('dblclick', (e) => {
+      if (!selectMode) {
+        e.preventDefault();
+        setQuoteFromMessage(index);
+      }
+    });
+    row.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      if (!selectMode) showBubbleMenu(index, e.pageX, e.pageY);
+    });
+    row.addEventListener('touchstart', function(e) {
+      if (selectMode) return;
+      this.holdTimer = setTimeout(() => showBubbleMenu(index, e.touches[0].pageX, e.touches[0].pageY), 600);
+    });
+    row.addEventListener('touchend', function(e) { clearTimeout(this.holdTimer); });
+    row.addEventListener('touchmove', function(e) { clearTimeout(this.holdTimer); });
+
+    container.appendChild(row);
+  });
+  container.scrollTop = container.scrollHeight;
+}
 
     // 多选功能
     function toggleSelectMessage(index) {
