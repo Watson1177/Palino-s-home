@@ -71,7 +71,6 @@
     .timestamp { font-size: 11px; color: #9e8f7f; margin-top: 4px; text-align: right; }
     .me .timestamp { text-align: left; }
 
-    /* 图片消息 */
     .image-bubble {
       max-width: 75%;
       border-radius: 12px;
@@ -85,7 +84,6 @@
       display: block;
     }
 
-    /* 文件消息 */
     .file-bubble {
       display: flex;
       align-items: center;
@@ -114,7 +112,6 @@
     .ai-btn { background: #c69c6d; }
     .attach-btn { background: #8ab4a8; padding: 0 12px; }
 
-    /* 底部导航栏 */
     .bottom-nav {
       height: 56px;
       background: #fff;
@@ -135,7 +132,6 @@
     .nav-item.active { color: #b8a99a; }
     .nav-item.chat-icon { font-size: 28px; }
 
-    /* 设置页覆盖层 */
     .settings-overlay {
       position: fixed; top:0; left:0; width:100%; height:100%; background:#F5F1EA; z-index:10; display:none; flex-direction:column;
     }
@@ -184,7 +180,6 @@
     .memory-actions { display: flex; gap: 6px; }
     .memory-actions button { background: none; border: none; cursor: pointer; font-size: 16px; }
 
-    /* 气泡菜单浮层 */
     .bubble-menu {
       position: fixed;
       background: white;
@@ -205,6 +200,19 @@
       white-space: nowrap;
     }
     .bubble-menu button:active { background: #f0ece6; }
+
+    .quote-bubble {
+      background: rgba(215, 201, 184, 0.4);
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin-top: 4px;
+      font-size: 12px;
+      color: #8a7b6e;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -346,14 +354,15 @@
   <!-- 气泡长按菜单 -->
   <div class="bubble-menu" id="bubbleMenu">
     <button onclick="quoteMessage()">💬 引用</button>
-    <button onclick="deleteMessage()">🗑️ 删除</button>
+    <button onclick="deleteSingleMessage()">🗑️ 删除本条</button>
+    <button onclick="deleteMessagesBelow()">🗑️ 删除此条及以下</button>
   </div>
 
   <script>
     // ========== 数据库与全局变量 ==========
     const DB_NAME = 'AiLoverDB';
     let db;
-    let messages = [];          // { id, role, type, content, timestamp, fileData? }
+    let messages = [];
     let settings = {
       roleName: '小爱',
       roleInfo: '温柔体贴',
@@ -366,7 +375,8 @@
       memories: { core: [], important: [], daily: [] }
     };
 
-    let currentMenuMsgIndex = null; // 当前长按的消息索引
+    let currentMenuMsgIndex = null;
+    let pendingQuote = null;
 
     function openDB() {
       return new Promise((resolve, reject) => {
@@ -414,7 +424,6 @@
       await store.put({ key, value });
     }
 
-    // ========== 工具函数 ==========
     function getTimeString() {
       const now = new Date();
       return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -429,7 +438,6 @@
       if (titleEl) titleEl.textContent = '💞 ' + (settings.roleName || '小爱');
     }
 
-    // ========== 页面切换与导航 ==========
     function switchPage(target) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -450,7 +458,6 @@
       messages.forEach((msg, index) => {
         const row = document.createElement('div');
         row.className = `message-row ${msg.role === 'user' ? 'me' : 'ai'}`;
-        // 头像
         const avatar = document.createElement('div');
         avatar.className = 'avatar';
         const avatarSrc = msg.role === 'user'
@@ -459,11 +466,8 @@
         if (avatarSrc) avatar.style.backgroundImage = `url(${avatarSrc})`;
         else {
           avatar.style.background = msg.role === 'user' ? '#a0c4ff' : '#ffc6ff';
-          avatar.style.display = 'flex';
-          avatar.style.alignItems = 'center';
-          avatar.style.justifyContent = 'center';
-          avatar.style.fontSize = '20px';
-          avatar.textContent = msg.role === 'user' ? '👤' : '🤖';
+          avatar.style.display = 'flex'; avatar.style.alignItems = 'center'; avatar.style.justifyContent = 'center';
+          avatar.style.fontSize = '20px'; avatar.textContent = msg.role === 'user' ? '👤' : '🤖';
         }
         if (msg.role === 'user') {
           avatar.addEventListener('contextmenu', e => { e.preventDefault(); selectCoupleAvatar(); });
@@ -473,67 +477,46 @@
           avatar.addEventListener('touchend', function(e) { clearTimeout(this.holdTimer); });
         }
 
-        // 气泡内容
         let bubbleElement;
         if (msg.type === 'image') {
-          bubbleElement = document.createElement('div');
-          bubbleElement.className = 'image-bubble';
-          const img = document.createElement('img');
-          img.src = msg.content;
-          img.onclick = () => window.open(msg.content, '_blank');
+          bubbleElement = document.createElement('div'); bubbleElement.className = 'image-bubble';
+          const img = document.createElement('img'); img.src = msg.content; img.onclick = () => window.open(msg.content, '_blank');
           bubbleElement.appendChild(img);
         } else if (msg.type === 'file') {
-          bubbleElement = document.createElement('div');
-          bubbleElement.className = 'file-bubble';
-          bubbleElement.innerHTML = `
-            <span class="file-icon">📄</span>
-            <div class="file-info">
-              <span class="file-name">${msg.fileName || '文件'}</span>
-              <span class="file-size">${msg.fileSize || ''}</span>
-            </div>`;
+          bubbleElement = document.createElement('div'); bubbleElement.className = 'file-bubble';
+          bubbleElement.innerHTML = `<span class="file-icon">📄</span><div class="file-info"><span class="file-name">${msg.fileName || '文件'}</span><span class="file-size">${msg.fileSize || ''}</span></div>`;
           bubbleElement.onclick = () => {
             const blob = new Blob([msg.content], { type: 'application/octet-stream' });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = msg.fileName || 'file';
-            a.click();
-            URL.revokeObjectURL(url);
+            const a = document.createElement('a'); a.href = url; a.download = msg.fileName || 'file'; a.click(); URL.revokeObjectURL(url);
           };
         } else {
-          bubbleElement = document.createElement('div');
-          bubbleElement.className = 'bubble';
-          bubbleElement.textContent = msg.content;
+          bubbleElement = document.createElement('div'); bubbleElement.className = 'bubble'; bubbleElement.textContent = msg.content;
         }
 
         const wrapper = document.createElement('div');
-        wrapper.style.display = 'flex';
-        wrapper.style.flexDirection = 'column';
-        wrapper.style.maxWidth = '75%';
+        wrapper.style.display = 'flex'; wrapper.style.flexDirection = 'column'; wrapper.style.maxWidth = '75%';
         wrapper.dataset.msgIndex = index;
         wrapper.appendChild(bubbleElement);
-        const time = document.createElement('div');
-        time.className = 'timestamp';
-        time.textContent = msg.timestamp || '';
-        wrapper.appendChild(time);
 
-        if (msg.role === 'user') {
-          row.appendChild(wrapper);
-          row.appendChild(avatar);
-        } else {
-          row.appendChild(avatar);
-          row.appendChild(wrapper);
+        // 显示引用
+        if (msg.quoted) {
+          const quoteDiv = document.createElement('div');
+          quoteDiv.className = 'quote-bubble';
+          quoteDiv.textContent = msg.quoted.content;
+          wrapper.appendChild(quoteDiv);
         }
 
-        // 长按事件
-        wrapper.addEventListener('contextmenu', e => {
-          e.preventDefault();
-          showBubbleMenu(index, e.pageX, e.pageY);
-        });
+        const time = document.createElement('div');
+        time.className = 'timestamp'; time.textContent = msg.timestamp || '';
+        wrapper.appendChild(time);
+
+        if (msg.role === 'user') { row.appendChild(wrapper); row.appendChild(avatar); }
+        else { row.appendChild(avatar); row.appendChild(wrapper); }
+
+        wrapper.addEventListener('contextmenu', e => { e.preventDefault(); showBubbleMenu(index, e.pageX, e.pageY); });
         wrapper.addEventListener('touchstart', function(e) {
-          this.holdTimer = setTimeout(() => {
-            showBubbleMenu(index, e.touches[0].pageX, e.touches[0].pageY);
-          }, 600);
+          this.holdTimer = setTimeout(() => { showBubbleMenu(index, e.touches[0].pageX, e.touches[0].pageY); }, 600);
         });
         wrapper.addEventListener('touchend', function(e) { clearTimeout(this.holdTimer); });
         wrapper.addEventListener('touchmove', function(e) { clearTimeout(this.holdTimer); });
@@ -547,7 +530,17 @@
       const input = document.getElementById('msgInput');
       const text = input.value.trim();
       if (!text) return;
-      const msg = { role: 'user', type: 'text', content: text, timestamp: getTimeString() };
+      const msg = {
+        role: 'user',
+        type: 'text',
+        content: text,
+        timestamp: getTimeString()
+      };
+      if (pendingQuote) {
+        msg.quoted = pendingQuote;
+        pendingQuote = null;
+        input.placeholder = '说点什么...';
+      }
       messages.push(msg);
       await saveMessage(msg);
       input.value = '';
@@ -596,7 +589,6 @@
       try {
         const replyContent = await callAI();
         messages.pop();
-        // 支持AI用 --- 分段发送多条消息
         const segments = replyContent.split(/\n?---\n?/).filter(s => s.trim() !== '');
         for (const seg of segments) {
           const aiMsg = { role: 'ai', type: 'text', content: seg.trim(), timestamp: getTimeString() };
@@ -621,7 +613,6 @@
       if (mem.important.length > 0) memoryContext += '重要事件: ' + mem.important.map(m => m.text).join('; ') + '\n';
       if (mem.daily.length > 0) memoryContext += '日常记忆: ' + mem.daily.map(m => m.text).join('; ') + '\n';
 
-      // 构建消息历史（包含文件/图片的文本描述）
       const recentMessages = messages.slice(-(settings.contextRounds * 2));
       const apiMessages = [
         { role: 'system', content: `你是${settings.roleName}，${settings.roleInfo}。${memoryContext ? '你记得以下信息：\n' + memoryContext : ''}如果对话产生了值得记忆的内容，请在回复末尾加上 ---MEMORY:类别:内容---（类别：core/important/daily）。你可以用 --- 分段发送多条消息。如果生成了文件内容，请在回复末尾用 ---FILE:文件名:文件内容--- 发送纯文本文档，用户将收到该文档的下载。请用恋人的语气回复。` }
@@ -645,7 +636,6 @@
       const data = await response.json();
       let reply = data.choices[0].message.content;
 
-      // 提取记忆
       const memRegex = /---MEMORY:(\w+):(.+?)---/g;
       let match;
       while ((match = memRegex.exec(reply)) !== null) {
@@ -657,12 +647,10 @@
       }
       reply = reply.replace(/---MEMORY:\w+:.+?---/g, '').trim();
 
-      // 提取文件（AI 发送的文件）
       const fileRegex = /---FILE:(.+?):([\s\S]*?)---/g;
       while ((match = fileRegex.exec(reply)) !== null) {
         const fileName = match[1].trim();
         const fileContent = match[2].trim();
-        // 把文件作为一条 AI 消息插入（用 type: 'file'）
         const fileMsg = { role: 'ai', type: 'file', content: fileContent, timestamp: getTimeString(), fileName, fileSize: formatSize(new Blob([fileContent]).size) };
         messages.push(fileMsg);
         await saveMessage(fileMsg);
@@ -690,13 +678,28 @@
       hideBubbleMenu();
       const msg = messages[currentMenuMsgIndex];
       if (!msg) return;
+      pendingQuote = {
+        id: msg.id,
+        content: msg.content.length > 50 ? msg.content.substring(0, 50) + '...' : msg.content
+      };
       const input = document.getElementById('msgInput');
-      input.value = `> ${msg.content}\n${input.value}`;
+      input.placeholder = '引用回复...';
       input.focus();
-      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
     }
 
-    async function deleteMessage() {
+    async function deleteSingleMessage() {
+      hideBubbleMenu();
+      if (!confirm('确定删除这条消息吗？')) return;
+      const index = currentMenuMsgIndex;
+      const deleted = messages.splice(index, 1);
+      const tx = db.transaction('messages', 'readwrite');
+      const store = tx.objectStore('messages');
+      if (deleted[0]?.id !== undefined) await store.delete(deleted[0].id);
+      await tx.done;
+      renderChat();
+    }
+
+    async function deleteMessagesBelow() {
       hideBubbleMenu();
       if (!confirm('删除这条及之后的所有消息？')) return;
       const toDelete = messages.splice(currentMenuMsgIndex);
@@ -737,7 +740,11 @@
     async function addMemory(category) {
       const text = prompt('请输入记忆内容:');
       if (!text) return;
-      settings.memories[category].push({ text, time: getFullTimeString() });
+      let time = prompt('输入时间 (如 2024-03-15 14:30，留空使用当前时间):');
+      if (!time || time.trim() === '') {
+        time = getFullTimeString();
+      }
+      settings.memories[category].push({ text, time: time.trim() });
       await saveSetting('memories', settings.memories);
       renderAllMemories();
     }
@@ -746,8 +753,13 @@
       const item = settings.memories[category][index];
       const newText = prompt('编辑记忆内容:', item.text);
       if (newText === null) return;
-      const newTime = prompt('编辑时间 (格式: 2024-03-15 14:30):', item.time);
-      if (newTime !== null && newTime.trim() !== '') item.time = newTime.trim();
+      let newTime = prompt('编辑时间 (格式: 2024-03-15 14:30，留空保持原时间):', item.time);
+      if (newTime === null) return;
+      if (newTime.trim() === '') {
+        if (!item.time) item.time = getFullTimeString();
+      } else {
+        item.time = newTime.trim();
+      }
       item.text = newText;
       await saveSetting('memories', settings.memories);
       renderAllMemories();
