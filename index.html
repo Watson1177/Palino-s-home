@@ -564,9 +564,13 @@
 
     async function editMemory(category, index) {
       const item = settings.memories[category][index];
-      const newText = prompt('编辑记忆:', item.text);
-      if (newText === null) return;
-      settings.memories[category][index].text = newText;
+      const newText = prompt('编辑记忆内容:', item.text);
+      if (newText === null) return; // 取消文本编辑
+      const newTime = prompt('编辑时间 (格式: 2024-03-15 14:30):', item.time);
+      if (newTime !== null && newTime.trim() !== '') {
+        item.time = newTime.trim();
+      }
+      item.text = newText;
       await saveSetting('memories', settings.memories);
       renderAllMemories();
     }
