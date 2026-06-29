@@ -165,6 +165,15 @@
     }
     .think-content.open { display: block; }
 
+    /* 时间标签 */
+    .time-divider {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin: 12px 0;
+      user-select: none;
+    }
+
     .anniv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
     .anniv-card {
       border-radius: 12px; padding: 12px; color: white; display: flex; flex-direction: column; justify-content: space-between;
@@ -188,11 +197,6 @@
     .heatmap-cell.empty { background: #faf8f5; color: #ccc; }
 
     .typing-hint { text-align: center; color: #999; font-size: 13px; padding: 4px; }
-
-    .quoted-highlight {
-  background: rgba(200, 180, 150, 0.2);
-  border-radius: 8px;
-}
   </style>
 </head>
 <body>
@@ -562,137 +566,142 @@
       saveSetting('totalMessageCount', settings.totalMessageCount);
     }
 
+    // ========== 聊天渲染（包含时间标签） ==========
     function renderChat() {
       const container = document.getElementById('chatContainer');
       container.innerHTML = '';
       let thinkContent = null;
+      let prevTimestamp = null; // 用于比较上一条消息的时间
+
       messages.forEach((msg, index) => {
-       if (msg.role === 'ai' && msg.content.includes('<think>')) {
-         const match = msg.content.match(/<think>([\s\S]*?)<\/think>/);
-         if (match) {
-           thinkContent = match[1].trim();
-           msg.content = msg.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+        // 检查时间间隔
+        if (prevTimestamp) {
+          const prevTime = new Date(`2000-01-01 ${prevTimestamp}`);
+          const currTime = new Date(`2000-01-01 ${msg.timestamp}`);
+          const diffMs = currTime - prevTime;
+          if (diffMs >= 3 * 60 * 1000) { // 超过3分钟
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'time-divider';
+            timeDiv.textContent = msg.timestamp;
+            container.appendChild(timeDiv);
+          }
+        }
+        prevTimestamp = msg.timestamp;
+
+        // 原有思维链解析
+        if (msg.role === 'ai' && msg.content.includes('<think>')) {
+          const match = msg.content.match(/<think>([\s\S]*?)<\/think>/);
+          if (match) {
+            thinkContent = match[1].trim();
+            msg.content = msg.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
           }
         }
 
-    // ---------- 处理 AI 消息中的引用格式 > ----------
-    let displayContent = msg.content;
-    let quoted = msg.quoted;
-    if (msg.role === 'ai' && !quoted && displayContent) {
-      const lines = displayContent.split('\n');
-      let quoteLines = [];
-      let i = 0;
-      while (i < lines.length && lines[i].startsWith('> ')) {
-        quoteLines.push(lines[i].slice(2)); // 去掉 '> '
-        i++;
-      }
-      if (quoteLines.length > 0) {
-        const quoteText = quoteLines.join('\n');
-        quoted = { content: quoteText.length > 50 ? quoteText.substring(0, 50) + '...' : quoteText };
-        displayContent = lines.slice(i).join('\n').trim();
-      }
+        // 引用解析
+        let displayContent = msg.content;
+        let quoted = msg.quoted;
+        if (msg.role === 'ai' && !quoted && displayContent) {
+          const lines = displayContent.split('\n');
+          let quoteLines = [];
+          let i = 0;
+          while (i < lines.length && lines[i].startsWith('> ')) {
+            quoteLines.push(lines[i].slice(2));
+            i++;
+          }
+          if (quoteLines.length > 0) {
+            const quoteText = quoteLines.join('\n');
+            quoted = { content: quoteText.length > 50 ? quoteText.substring(0, 50) + '...' : quoteText };
+            displayContent = lines.slice(i).join('\n').trim();
+          }
+        }
+
+        const row = document.createElement('div');
+        row.className = `message-row ${msg.role === 'user' ? 'me' : 'ai'}`;
+        if (selectMode) row.classList.add('selectable');
+        if (selectedMessageIndices.has(index)) row.classList.add('selected');
+        row.dataset.msgIndex = index;
+
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        const avatarSrc = msg.role === 'user' ? (settings.coupleAvatars.length > 0 ? settings.coupleAvatars[0]?.my : '') : (settings.roleAvatar || '');
+        if (avatarSrc) avatar.style.backgroundImage = `url(${avatarSrc})`;
+        else {
+          avatar.style.background = msg.role === 'user' ? '#a0c4ff' : '#ffc6ff';
+          avatar.style.display = 'flex'; avatar.style.alignItems = 'center'; avatar.style.justifyContent = 'center';
+          avatar.style.fontSize = '20px'; avatar.textContent = msg.role === 'user' ? '👤' : '🤖';
+        }
+
+        if (msg.role === 'ai' && thinkContent !== null) {
+          const thinkDiv = document.createElement('div');
+          thinkDiv.className = 'think-header';
+          thinkDiv.textContent = '💭 Palino的心里话';
+          const thinkBody = document.createElement('div');
+          thinkBody.className = 'think-content';
+          thinkBody.textContent = thinkContent;
+          thinkDiv.onclick = () => thinkBody.classList.toggle('open');
+          container.appendChild(thinkDiv);
+          container.appendChild(thinkBody);
+          thinkContent = null;
+        }
+
+        let bubbleElement;
+        if (msg.type === 'image') {
+          bubbleElement = document.createElement('div'); bubbleElement.className = 'image-bubble';
+          const img = document.createElement('img'); img.src = displayContent; img.onclick = () => window.open(displayContent, '_blank');
+          bubbleElement.appendChild(img);
+        } else if (msg.type === 'file') {
+          bubbleElement = document.createElement('div'); bubbleElement.className = 'file-bubble';
+          bubbleElement.innerHTML = `<span class="file-icon">📄</span><div class="file-info"><span class="file-name">${msg.fileName || '文件'}</span><span class="file-size">${msg.fileSize || ''}</span></div>`;
+          bubbleElement.onclick = () => {
+            const blob = new Blob([displayContent], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = msg.fileName || 'file'; a.click(); URL.revokeObjectURL(url);
+          };
+        } else {
+          bubbleElement = document.createElement('div'); bubbleElement.className = 'bubble'; bubbleElement.textContent = displayContent;
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.style.display = 'flex'; wrapper.style.flexDirection = 'column'; wrapper.style.maxWidth = '75%';
+        wrapper.appendChild(bubbleElement);
+
+        if (quoted) {
+          const quoteDiv = document.createElement('div');
+          quoteDiv.className = 'quote-bubble';
+          quoteDiv.textContent = quoted.content;
+          wrapper.appendChild(quoteDiv);
+        }
+
+        const time = document.createElement('div');
+        time.className = 'timestamp'; time.textContent = msg.timestamp || '';
+        wrapper.appendChild(time);
+
+        if (msg.role === 'user') { row.appendChild(wrapper); row.appendChild(avatar); }
+        else { row.appendChild(avatar); row.appendChild(wrapper); }
+
+        // 事件绑定
+        row.addEventListener('click', (e) => {
+          if (selectMode) { e.preventDefault(); toggleSelectMessage(index); }
+        });
+        row.addEventListener('dblclick', (e) => {
+          if (!selectMode) { e.preventDefault(); setQuoteFromMessage(index); }
+        });
+        row.addEventListener('contextmenu', e => {
+          e.preventDefault();
+          if (!selectMode) showBubbleMenu(index, e.pageX, e.pageY);
+        });
+        row.addEventListener('touchstart', function(e) {
+          if (selectMode) return;
+          this.holdTimer = setTimeout(() => showBubbleMenu(index, e.touches[0].pageX, e.touches[0].pageY), 600);
+        });
+        row.addEventListener('touchend', function(e) { clearTimeout(this.holdTimer); });
+        row.addEventListener('touchmove', function(e) { clearTimeout(this.holdTimer); });
+
+        container.appendChild(row);
+      });
+      container.scrollTop = container.scrollHeight;
     }
-    // -----------------------------------------
-
-    const row = document.createElement('div');
-    row.className = `message-row ${msg.role === 'user' ? 'me' : 'ai'}`;
-    if (selectMode) row.classList.add('selectable');
-    if (selectedMessageIndices.has(index)) row.classList.add('selected');
-    row.dataset.msgIndex = index;
-
-    const avatar = document.createElement('div');
-    avatar.className = 'avatar';
-    const avatarSrc = msg.role === 'user' ? (settings.coupleAvatars.length > 0 ? settings.coupleAvatars[0]?.my : '') : (settings.roleAvatar || '');
-    if (avatarSrc) avatar.style.backgroundImage = `url(${avatarSrc})`;
-    else {
-      avatar.style.background = msg.role === 'user' ? '#a0c4ff' : '#ffc6ff';
-      avatar.style.display = 'flex'; avatar.style.alignItems = 'center'; avatar.style.justifyContent = 'center';
-      avatar.style.fontSize = '20px'; avatar.textContent = msg.role === 'user' ? '👤' : '🤖';
-    }
-
-    if (msg.role === 'ai' && thinkContent !== null) {
-      const thinkDiv = document.createElement('div');
-      thinkDiv.className = 'think-header';
-      thinkDiv.textContent = '💭 Palino的心里话';
-      const thinkBody = document.createElement('div');
-      thinkBody.className = 'think-content';
-      thinkBody.textContent = thinkContent;
-      thinkDiv.onclick = () => thinkBody.classList.toggle('open');
-      container.appendChild(thinkDiv);
-      container.appendChild(thinkBody);
-      thinkContent = null;
-    }
-
-    let bubbleElement;
-    if (msg.type === 'image') {
-      bubbleElement = document.createElement('div'); bubbleElement.className = 'image-bubble';
-      const img = document.createElement('img'); img.src = displayContent; img.onclick = () => window.open(displayContent, '_blank');
-      bubbleElement.appendChild(img);
-    } else if (msg.type === 'file') {
-      bubbleElement = document.createElement('div'); bubbleElement.className = 'file-bubble';
-      bubbleElement.innerHTML = `<span class="file-icon">📄</span><div class="file-info"><span class="file-name">${msg.fileName || '文件'}</span><span class="file-size">${msg.fileSize || ''}</span></div>`;
-      bubbleElement.onclick = () => {
-        const blob = new Blob([displayContent], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = msg.fileName || 'file'; a.click(); URL.revokeObjectURL(url);
-      };
-    } else {
-      bubbleElement = document.createElement('div'); bubbleElement.className = 'bubble'; bubbleElement.textContent = displayContent;
-    }
-
-    const wrapper = document.createElement('div');
-    wrapper.style.display = 'flex'; wrapper.style.flexDirection = 'column'; wrapper.style.maxWidth = '75%';
-    wrapper.appendChild(bubbleElement);
-
-    // 显示引用气泡（用户或AI均支持）
-    if (quoted) {
-      const quoteDiv = document.createElement('div');
-      quoteDiv.className = 'quote-bubble';
-      quoteDiv.textContent = quoted.content;
-      wrapper.appendChild(quoteDiv);
-    }
-
-    const time = document.createElement('div');
-    time.className = 'timestamp'; time.textContent = msg.timestamp || '';
-    wrapper.appendChild(time);
-
-    if (pendingQuote && pendingQuote.id === msg.id) {
-  wrapper.classList.add('quoted-highlight');
-}
-
-    if (msg.role === 'user') { row.appendChild(wrapper); row.appendChild(avatar); }
-    else { row.appendChild(avatar); row.appendChild(wrapper); }
-
-    // 事件绑定保持不变
-    row.addEventListener('click', (e) => {
-      if (selectMode) {
-        e.preventDefault();
-        toggleSelectMessage(index);
-      }
-    });
-    row.addEventListener('dblclick', (e) => {
-      if (!selectMode) {
-        e.preventDefault();
-        setQuoteFromMessage(index);
-      }
-    });
-    row.addEventListener('contextmenu', e => {
-      e.preventDefault();
-      if (!selectMode) showBubbleMenu(index, e.pageX, e.pageY);
-    });
-    row.addEventListener('touchstart', function(e) {
-      if (selectMode) return;
-      this.holdTimer = setTimeout(() => showBubbleMenu(index, e.touches[0].pageX, e.touches[0].pageY), 600);
-    });
-    row.addEventListener('touchend', function(e) { clearTimeout(this.holdTimer); });
-    row.addEventListener('touchmove', function(e) { clearTimeout(this.holdTimer); });
-
-    container.appendChild(row);
-  });
-  container.scrollTop = container.scrollHeight;
-}
-
-    // 多选功能
+    // ========== 多选功能 ==========
     function toggleSelectMessage(index) {
       if (selectedMessageIndices.has(index)) selectedMessageIndices.delete(index);
       else selectedMessageIndices.add(index);
@@ -734,24 +743,24 @@
       renderChat();
     }
 
+    // ========== 引用（支持取消） ==========
     function setQuoteFromMessage(index) {
       const msg = messages[index];
       if (!msg) return;
-      // 如果当前已有引用，且双击的是同一条消息 → 取消引用
       if (pendingQuote && pendingQuote.id === msg.id) {
-         pendingQuote = null;
-         document.getElementById('msgInput').placeholder = '说点什么...';
-         document.getElementById('msgInput').focus();
-         renderChat(); // 刷新以取消高亮
-         return;
+        pendingQuote = null;
+        document.getElementById('msgInput').placeholder = '说点什么...';
+        document.getElementById('msgInput').focus();
+        renderChat();
+        return;
       }
-      // 设置新引用（或切换引用到另一条消息）
       pendingQuote = { id: msg.id, content: msg.content.length > 50 ? msg.content.substring(0, 50) + '...' : msg.content };
       document.getElementById('msgInput').placeholder = '引用回复...';
       document.getElementById('msgInput').focus();
-      renderChat(); // 刷新以高亮被引用消息
+      renderChat();
     }
 
+    // ========== 发送消息 ==========
     async function sendUserMessage() {
       if (selectMode) return;
       const input = document.getElementById('msgInput');
@@ -791,10 +800,9 @@
       input.click();
     }
 
-    function delay(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
+    // ========== AI 回复（分段延迟） ==========
     async function triggerAIReply() {
       if (selectMode) return;
       if (messages.length === 0) return;
@@ -821,7 +829,6 @@
           await saveMessage(firstMsg);
           incrementDailyCount();
           renderChat();
-
           for (let i = 1; i < segments.length; i++) {
             await delay(1500);
             const nextMsg = { role: 'ai', type: 'text', content: segments[i].trim(), timestamp: getTimeString() };
@@ -896,7 +903,7 @@
       return reply;
     }
 
-    // 气泡菜单
+    // ========== 气泡菜单 ==========
     function showBubbleMenu(index, x, y) {
       currentMenuMsgIndex = index;
       const menu = document.getElementById('bubbleMenu');
@@ -924,7 +931,7 @@
       renderChat();
     }
 
-    // 日落归档
+    // ========== 日落归档 ==========
     async function sunsetArchive() {
       const now = new Date();
       const hour = now.getHours();
@@ -957,6 +964,7 @@
       }
     }
     function startArchiveTimer() { setInterval(sunsetArchive, 60000); }
+
     // ========== 记忆功能 ==========
     function showAddMemoryForm(category) {
       currentEditIndex[category] = -1;
@@ -966,7 +974,6 @@
       document.getElementById(category + 'EditEvent').value = '';
       document.getElementById(category + 'EditFeeling').value = '';
     }
-
     function showEditMemoryForm(category, index) {
       currentEditIndex[category] = index;
       const item = settings.memories[category][index];
@@ -976,12 +983,10 @@
       document.getElementById(category + 'EditEvent').value = item.event || '';
       document.getElementById(category + 'EditFeeling').value = item.feeling || '';
     }
-
     function hideEditForm(category) {
       document.getElementById(category + 'EditCard').classList.remove('active');
       currentEditIndex[category] = -1;
     }
-
     async function saveMemoryFromForm(category) {
       const time = document.getElementById(category + 'EditTime').value.trim();
       const event = document.getElementById(category + 'EditEvent').value.trim();
@@ -998,20 +1003,17 @@
       hideEditForm(category);
       renderAllMemories();
     }
-
     async function deleteMemory(category, index) {
       if (!confirm('确定删除这条记忆吗？')) return;
       settings.memories[category].splice(index, 1);
       await saveSetting('memories', settings.memories);
       renderAllMemories();
     }
-
     function renderAllMemories() {
       renderMemoryList('core', document.getElementById('coreMemoryList'));
       renderMemoryList('important', document.getElementById('importantMemoryList'));
       renderMemoryList('daily', document.getElementById('dailyMemoryList'));
     }
-
     function renderMemoryList(category, container) {
       if (!container) return;
       container.innerHTML = '';
@@ -1035,7 +1037,6 @@
 
     // ========== 情侣头像管理 ==========
     function openCoupleAvatarsPage() { renderCoupleList(); openSubPage('coupleAvatarsPage'); }
-
     function renderCoupleList() {
       const container = document.getElementById('coupleList');
       if (!container) return;
@@ -1052,7 +1053,6 @@
         container.appendChild(div);
       });
     }
-
     function showAddCoupleForm() {
       document.getElementById('coupleAddCard').classList.add('active');
       document.getElementById('couplePairName').value = '';
@@ -1061,11 +1061,7 @@
       document.getElementById('aiAvatarPreview').style.backgroundImage = '';
       document.getElementById('myAvatarPreview').style.backgroundImage = '';
     }
-
-    function hideAddCoupleForm() {
-      document.getElementById('coupleAddCard').classList.remove('active');
-    }
-
+    function hideAddCoupleForm() { document.getElementById('coupleAddCard').classList.remove('active'); }
     function previewAvatar(type) {
       const input = document.getElementById(type + 'AvatarInput');
       const preview = document.getElementById(type + 'AvatarPreview');
@@ -1075,7 +1071,6 @@
         reader.readAsDataURL(input.files[0]);
       }
     }
-
     async function saveNewCouplePair() {
       const name = document.getElementById('couplePairName').value.trim();
       if (!name) { alert('请输入配对名称'); return; }
@@ -1089,7 +1084,6 @@
       hideAddCoupleForm();
       renderCoupleList();
     }
-
     async function selectCouplePair(index) {
       const pair = settings.coupleAvatars[index];
       if (!pair) return;
@@ -1098,13 +1092,11 @@
       renderChat();
       alert('已应用情侣头像 ' + (pair.name || ''));
     }
-
     async function deleteCouplePair(index) {
       settings.coupleAvatars.splice(index, 1);
       await saveSetting('coupleAvatars', settings.coupleAvatars);
       renderCoupleList();
     }
-
     async function selectCoupleAvatar() {
       if (settings.coupleAvatars.length === 0) { alert('请先到设置-情侣头像中添加配对'); return; }
       const names = settings.coupleAvatars.map(p => p.name || '未命名');
@@ -1121,7 +1113,6 @@
       updateRoleAvatarPreview();
       openSubPage('roleInfoPage');
     }
-
     async function saveRoleInfo() {
       settings.roleName = document.getElementById('roleName').value;
       settings.roleInfo = document.getElementById('roleExtraInfo').value;
@@ -1130,12 +1121,10 @@
       updateHeaderTitle();
       closeSubPage('roleInfoPage');
     }
-
     function updateRoleAvatarPreview() {
       const preview = document.getElementById('roleAvatarPreview');
       if (settings.roleAvatar) preview.style.backgroundImage = `url(${settings.roleAvatar})`;
     }
-
     async function changeRoleAvatar() {
       const file = await selectImageFile();
       if (!file) return;
@@ -1154,7 +1143,6 @@
         input.click();
       });
     }
-
     function fileToBase64(file) {
       return new Promise(resolve => {
         const reader = new FileReader();
@@ -1162,7 +1150,6 @@
         reader.readAsDataURL(file);
       });
     }
-
     function formatSize(bytes) {
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
@@ -1176,7 +1163,6 @@
       document.getElementById('modelName').value = settings.model;
       openSubPage('apiConfigPage');
     }
-
     async function fetchModels() {
       const url = document.getElementById('apiUrl').value.replace(/\/+$/, '') + '/v1/models';
       const key = document.getElementById('apiKey').value;
@@ -1192,7 +1178,6 @@
         alert('模型列表已加载');
       } catch (e) { alert('获取失败: ' + e.message); }
     }
-
     async function saveApiConfig() {
       settings.apiUrl = document.getElementById('apiUrl').value.trim();
       settings.apiKey = document.getElementById('apiKey').value.trim();
@@ -1210,7 +1195,6 @@
       document.getElementById('searchResults').innerHTML = '';
       openSubPage('searchPage');
     }
-
     function performSearch() {
       const keyword = document.getElementById('searchKeyword').value.trim().toLowerCase();
       const resultsDiv = document.getElementById('searchResults');
@@ -1233,24 +1217,20 @@
         resultsDiv.appendChild(div);
       });
     }
-
     function openDialogSettings() {
       document.getElementById('contextRounds').value = settings.contextRounds;
       openSubPage('dialogSettingsPage');
     }
-
     async function saveDialogSettings() {
       settings.contextRounds = parseInt(document.getElementById('contextRounds').value) || 4;
       await saveSetting('contextRounds', settings.contextRounds);
       closeSubPage('dialogSettingsPage');
     }
-
     function openDataManage() {
       document.getElementById('importFile').value = '';
       document.getElementById('importStatus').textContent = '';
       openSubPage('dataManagePage');
     }
-
     async function exportData() {
       const tx = db.transaction('messages', 'readonly');
       const store = tx.objectStore('messages');
@@ -1268,7 +1248,6 @@
       URL.revokeObjectURL(url);
       alert('导出成功！');
     }
-
     async function importData() {
       const fileInput = document.getElementById('importFile');
       const statusDiv = document.getElementById('importStatus');
@@ -1317,7 +1296,6 @@
       document.getElementById('annivColor').value = '#b8a99a';
       document.getElementById('annivEditCard').classList.add('active');
     }
-
     function showEditAnniversaryForm(index) {
       currentAnnivIndex = index;
       const a = settings.anniversaries[index];
@@ -1328,12 +1306,10 @@
       document.getElementById('annivColor').value = a.color;
       document.getElementById('annivEditCard').classList.add('active');
     }
-
     function hideAnnivForm() {
       document.getElementById('annivEditCard').classList.remove('active');
       currentAnnivIndex = -1;
     }
-
     async function saveAnniversary() {
       const title = document.getElementById('annivTitle').value.trim();
       const date = document.getElementById('annivDate').value;
@@ -1348,14 +1324,12 @@
       hideAnnivForm();
       renderAnniversaries();
     }
-
     async function deleteAnniversary(index) {
       if (!confirm('删除这个纪念日吗？')) return;
       settings.anniversaries.splice(index, 1);
       await saveSetting('anniversaries', settings.anniversaries);
       renderAnniversaries();
     }
-
     function renderAnniversaries() {
       const grid = document.getElementById('annivGrid');
       if (!grid) return;
