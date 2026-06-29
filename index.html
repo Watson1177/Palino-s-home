@@ -750,10 +750,10 @@
       };
       input.click();
     }
-    function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
     async function triggerAIReply() {
       if (selectMode) return;
@@ -776,21 +776,19 @@
         hint.remove();
         const segments = reply.split(/\n?---\n?/).filter(s => s.trim() !== '');
         if (segments.length > 0) {
-           // 第一条立即发送
-           const firstMsg = { role: 'ai', type: 'text', content: segments[0].trim(), timestamp: getTimeString() };
-           messages.push(firstMsg);
-           await saveMessage(firstMsg);
-           incrementDailyCount();
-           renderChat();
+          const firstMsg = { role: 'ai', type: 'text', content: segments[0].trim(), timestamp: getTimeString() };
+          messages.push(firstMsg);
+          await saveMessage(firstMsg);
+          incrementDailyCount();
+          renderChat();
 
-           // 后续每段延迟 1.5 秒后再发送
-           for (let i = 1; i < segments.length; i++) {
-             await delay(1500); // 间隔1.5秒，可自行调整
-             const nextMsg = { role: 'ai', type: 'text', content: segments[i].trim(), timestamp: getTimeString() };
-             messages.push(nextMsg);
-             await saveMessage(nextMsg);
-             incrementDailyCount();
-             renderChat();
+          for (let i = 1; i < segments.length; i++) {
+            await delay(1500);
+            const nextMsg = { role: 'ai', type: 'text', content: segments[i].trim(), timestamp: getTimeString() };
+            messages.push(nextMsg);
+            await saveMessage(nextMsg);
+            incrementDailyCount();
+            renderChat();
           }
         }
       } catch(e) {
@@ -919,7 +917,7 @@
       }
     }
     function startArchiveTimer() { setInterval(sunsetArchive, 60000); }
-        // ========== 记忆功能 ==========
+    // ========== 记忆功能 ==========
     function showAddMemoryForm(category) {
       currentEditIndex[category] = -1;
       const card = document.getElementById(category + 'EditCard');
